@@ -12,6 +12,7 @@ use App\Models\Transaction;
 use App\Models\TransactionDetails;
 use App\Models\TransactionDeactivate;
 use App\Models\GeoLocation;
+use App\Models\Collections;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -329,10 +330,9 @@ class ConsumerRepository
                 $consumerTypeCreated= str_pad($request->consumerType, 2, "0", STR_PAD_LEFT);
                 $randCreated= str_pad($consumer->id, 5, "0", STR_PAD_LEFT);
                 
-                $consumerUpdate->consumer_no = $wardCreated.$request->consumerCategory.$consumerTypeCreated.$randCreated.$serialNo;
-            }else{
-                $consumerUpdate->consumer_no = $consumerNo;
+                $consumerNo = $wardCreated.$request->consumerCategory.$consumerTypeCreated.$randCreated.$serialNo;
             }
+            $consumerUpdate->consumer_no = $consumerNo ;
             $consumerUpdate->entry_type = 1;
             $consumerUpdate->save();
 
@@ -367,6 +367,7 @@ class ConsumerRepository
             $response['wardNo'] = $request->wardNo;
             $response['apartmentId'] = $request->apartmentId;
             $response['holdingNo'] = $request->holdingNo;
+            $response['consumerNo'] = $consumerNo;
             $response['consumerName'] = $request->consumerName;
             $response['apartmentName'] = $apartName;
             $response['mobileNo'] = $request->mobileNo;
@@ -463,9 +464,7 @@ class ConsumerRepository
             $response = array();
             if(isset($request->consumerId))
             {
-                $consumer = Consumer::find($request->consumerId);
-                $consumer->deactivate_status = 1;
-                $consumer->save();
+                
                 
                 $consDtls = new ConsumerDeactivateDeatils();
                 $consDtls->setConnection($this->schema);
@@ -479,6 +478,14 @@ class ConsumerRepository
                 
                 if($consDtls->id > 0)
                 {
+                    $consumer = Consumer::find($request->consumerId);
+                    $consumer->deactivate_status = 1;
+                    $consumer->save();
+
+                    Demand::where('consumer_id', $request->consumerId)
+                            ->where('paid_status', 0)
+                            ->update('deactivate_status', 1);
+
                     return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'Deactivated Successfully'], 200);
                 }else{
                     return response()->json(['status'=> False, 'data'=>$response, 'msg'=> 'Deactivate issue, please check'], 200);
@@ -652,24 +659,40 @@ class ConsumerRepository
             $response = array();
             if(isset($request->transactionNo))
             {
-                $sql = "SELECT t.transaction_no,transaction_date,total_payable_amt,t.user_id,c.name as consumer_name,consumer_no,a.apt_code,a.apt_name,u.name as transaction_by
+                $sql = "SELECT t.*,c.name as consumer_name,consumer_no,a.apt_code,a.apt_name,u.name as transaction_by,
+                c.ward_no, c.holding_no, c.address,c.apt_mstr_id,u.contactno
                 FROM tbl_transaction t
                 LEFT JOIN tbl_consumer c on t.consumer_id=c.id
                 LEFT JOIN tbl_apt_details_mstr a on t.apt_mstr_id=a.id
                 JOIN db_master.view_user_mstr u on t.user_id=u.id
                 WHERE t.transaction_no ='".$request->transactionNo."'";
                 
-                $tran = DB::connection($this->schema)->select($sql)[0];
-
-                $response['transactionNo'] = $tran->transaction_no;
-                $response['transactionDate'] = date('d-m-Y', strtotime($tran->transaction_date));
-                $response['transactionAmount'] = $tran->total_payable_amt;
-                $response['transactionBy'] = $tran->transaction_by;
-                $response['consumerNo'] = $tran->consumer_no;
-                $response['consumerName'] = $tran->consumer_name;
-                $response['apartmentCode'] = $tran->apt_code;
-                $response['apartmentName'] = $tran->apt_name;
                 
+                $tran = DB::connection($this->schema)->select($sql);
+
+                if($tran)
+                {
+
+                    $tran = $tran[0];
+
+                    $response['transactionNo'] = $tran->transaction_no;
+                    $response['transactionDate'] = date('d-m-Y', strtotime($tran->transaction_date));
+                    $response['transactionAmount'] = $tran->total_payable_amt;
+                    $response['transactionBy'] = $tran->transaction_by;
+                    $response['consumerNo'] = $tran->consumer_no;
+                    $response['consumerName'] = $tran->consumer_name;
+                    $response['apartmentCode'] = $tran->apt_code;
+                    $response['apartmentName'] = $tran->apt_name;
+                    $response['wardNo'] = $tran->ward_no;
+                    $response['holdingNo'] = $tran->holding_no;
+                    $response['address'] = $tran->address;
+                    $response['totalDemand'] = $tran->total_demand_amt;
+                    $response['remainingAmount'] = $tran->total_remaining_amt;
+                    $response['paidStatus'] = ($tran->pad_status == 1)? "Paid":"Pending";
+                    $response['paymentMode'] = $tran->payment_mode;
+                    $response['tcName'] = $tran->transaction_by;
+                    $response['tcMobileNo'] = $tran->contactno;
+                }
 
                 return response()->json(['status'=> True, 'data'=>$response, 'msg'=> ''], 200);
                 
@@ -1119,6 +1142,86 @@ class ConsumerRepository
         }
     }
 
+    public function AllTransaction(Request $request)
+    {
+        try
+        {   
+            $response = array();
+            if(isset($request->wardNo) && isset($request->userId))
+            {
+                $transactions = Transaction::select('transaction_date','tbl_transaction.transaction_no', 'total_payable_amt', 'c.name', 'c.consumer_no','cn.name as consumer_name', 'cn.consumer_no as consumer_no1')
+                                    ->leftjoin('tbl_consumer as c', 'tbl_transaction.consumer_id', 'c.id')
+                                    ->leftjoin('tbl_consumer as cn', 'tbl_transaction.apt_mstr_id', 'cn.apt_mstr_id')
+                                    ->where('c.ward_no', $request->wardNo)
+                                    ->where('tbl_transaction.user_id', $request->userId);
+                                    
+
+                if($request->date)
+                    $transactions = $transactions->whereDate('transaction_date','=', date('Y-m-d', strtotime($request->date)));
+                
+                $transactions = $transactions->get();
+                
+                foreach($transactions as $trans)
+                {
+                    $val['consumerName'] = $trans->name;
+                    $val['Amount'] = $trans->total_payable_amt;
+                    $val['transactionDate'] = date('d-m-Y', strtotime($trans->transaction_date));
+                    $val['consumerNo'] = $trans->consumer_no;
+                    $val['transactionNo'] = $trans->transaction_no;
+                    $response[] = $val;
+                }
+                return response()->json(['status'=> True, 'data'=>$response, 'msg'=> ''], 200);
+                
+            }else{
+                return response()->json(['status'=> False, 'data'=>$response, 'msg'=> 'Undefined parameter supply'], 200);
+            }
+        }
+        catch(Exception $e)
+        {
+            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+        }
+    }
+
+    public function AllCollectionSummary(Request $request)
+    {
+        try
+        {   
+            $response = array();
+            if(isset($request->userId))
+            {
+                $sql = "SELECT t.user_id, name, user_type, contactno, sum(total_payable_amt) as total_amt,
+                sum(CASE when payment_mode = 'Cash' then total_payable_amt else 0 end) as cash_amount,
+                sum(CASE when payment_mode = 'Cheque' then total_payable_amt else 0 end) as cheque_amount,
+                sum(CASE when payment_mode = 'Paytm' then total_payable_amt else 0 end) as paytm_amount
+                FROM tbl_transaction as t
+                JOIN db_master.view_user_mstr as u on t.user_id=u.id
+                WHERE t.user_id=".$request->userId." and pad_status in(1,2) group by t.user_id";
+                
+                $collection = DB::connection($this->schema)->select($sql);
+                
+                if($collection)
+                {
+                    $collection = $collection[0];
+                
+                    $response['tcName'] = $collection->name;
+                    $response['designation'] = $collection->user_type;
+                    $response['mobileNo'] = $collection->contactno;
+                    $response['cash'] = $collection->cash_amount;
+                    $response['cheque'] = $collection->cheque_amount;
+                    $response['paytm'] = $collection->paytm_amount;
+                    $response['totalAmount'] = $collection->paytm_amount;
+                }
+                return response()->json(['status'=> True, 'data'=>$response, 'msg'=> ''], 200);
+                
+            }else{
+                return response()->json(['status'=> False, 'data'=>$response, 'msg'=> 'Undefined parameter supply'], 200);
+            }
+        }
+        catch(Exception $e)
+        {
+            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+        }
+    }
 
     
 

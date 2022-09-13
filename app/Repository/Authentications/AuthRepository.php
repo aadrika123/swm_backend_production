@@ -44,22 +44,22 @@ class AuthRepository implements iAuth
                     $refUserName->remember_token = $token;
                     $refUserName->save();
 
-                    $response = ['status' => True, 'msg' => 'You Have Logged In', 'data' => $token];
+                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token];
                     return response($response, 200);
                 }
                 // If Password Does not Matched
                 if ($passStmt == false) {
-                    $response = ['status' => True, 'msg' => 'Incorrect Password', 'data' => ''];
+                    $response = ['status' => True, 'loginstatus' => 0 ,'msg' => 'Incorrect Password', 'data' => ''];
                     return response($response, 200);
                 }
             }
             // If the UserName is not Existing
             if (!$refUserName) {
-                $message = ['status' => True, 'msg' => 'UserName not Found', 'data' => ''];
+                $message = ['status' => True, 'loginstatus' => 0, 'msg' => 'UserName not Found', 'data' => ''];
                 return response()->json($message, 200);
             }
         } catch (Exception $e) {
-            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+            return response()->json(['status'=> False, 'loginstatus' => 0, 'data'=>'', 'msg'=> $e], 400);
         }
     }
 

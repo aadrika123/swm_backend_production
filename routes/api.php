@@ -57,6 +57,8 @@ Route::controller(ConsumerController::class)->group(function () {
     Route::post('transactionDeactivate', 'transactionDeactivate');
     Route::post('postRenterForn', 'RenterForm');
     Route::get('getGeoLocation/{consumerId}', 'GetGeoLocation');
+    Route::post('getAllTransaction', 'GetAllTransaction');
+    Route::post('getCollectionSummary', 'AllCollectionSummary');
 });
 
 Route::controller(MasterController::class)->group(function () {
