@@ -191,6 +191,18 @@ class ConsumerController extends Controller
     }
 
 
+    /**
+     * Make transaction mode changed.
+     *
+     * @param  $request
+     * @return ConsumerRepository->TransactionModeChange
+     */
+    public function transactionModeChange(Request $req)
+    {
+        return $this->ConResp->TransactionModeChange($req);
+    }
+
+
 
     /**
      * Add new Renter.
@@ -240,6 +252,19 @@ class ConsumerController extends Controller
     public function AllCollectionSummary(Request $req)
     {
         return $this->ConResp->AllCollectionSummary($req);
+    }
+
+
+
+    /**
+     * Get Collection summery by the user.
+     *
+     * @param  $request
+     * @return ConsumerRepository->AllCollectionSummary
+     */
+    public function UpdateConsumerDetails(Request $req)
+    {
+        return $this->ConResp->ConsumerUpdate($req);
     }
 
 }

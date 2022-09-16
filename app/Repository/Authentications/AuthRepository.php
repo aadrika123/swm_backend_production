@@ -44,7 +44,7 @@ class AuthRepository implements iAuth
                     $refUserName->remember_token = $token;
                     $refUserName->save();
 
-                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token];
+                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id];
                     return response($response, 200);
                 }
                 // If Password Does not Matched

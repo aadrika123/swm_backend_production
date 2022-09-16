@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\Api\Helpers;
 
 
 /**
@@ -28,7 +29,7 @@ use Illuminate\Support\Facades\Auth;
 class ConsumerRepository
 {
     private $schema = 'db_ranchi';
-
+    use Helpers;
     
     public function ConsumerList(Request $request)
     {
@@ -71,9 +72,11 @@ class ConsumerRepository
                                 ->join('tbl_consumer_type', 'tbl_consumer.consumer_type_id', '=', 'tbl_consumer_type.id')
                                 ->select(DB::raw('tbl_consumer.*, tbl_consumer_category.name as category, tbl_consumer_type.name as type'))
                                 ->where($field, $operator, $value)
-                                ->get();
+                                ->paginate(
+                                    $perPage = 10, $columns = ['*'], $pageName = 'consumers'
+                                );
                 
-
+                //echo "<pre/>";print_r($consumerList);
                 foreach($consumerList as $consumer)
                 {
                     $demand = Demand::where('consumer_id', $consumer->id)
@@ -90,15 +93,7 @@ class ConsumerRepository
                         $demand_upto = $dmd->demand_date;
                         $paid_status = 'False';
                     }
-                    // $demand = Demand::select(DB::raw('consumer_id,sum(total_tax) as total_tax,paid_status,deactivate_status,max(demand_date) as demand_upto'))
-                    //             ->where('consumer_id', $consumer->id)
-                    //             ->where('paid_status', 0)
-                    //             ->where('deactivate_status', 0)
-                    //             ->groupByRaw('consumer_id,paid_status,deactivate_status')
-                    //             ->first();
-                            
-                    // $category = DB::table('tbl_consumer_category')
-                    //                 ->where('id', $consumer->consumer_category_id)->first();
+                    //
                     
                     $con['id'] = $consumer->id;
                     $con['wardNo'] = $consumer->ward_no;
@@ -119,7 +114,7 @@ class ConsumerRepository
                     $con['totalDemand'] = $total_tax;
                     $con['demandUpto'] = $demand_upto;
                     $con['paidStatus'] = $paid_status;
-                    $con['applyBy'] = $consumer->user_id;
+                    $con['applyBy'] = $this->GetUserDetails($consumer->user_id)->name;
                     $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
 
                     $conArr[] = $con;
@@ -236,7 +231,7 @@ class ConsumerRepository
                 $con['pinCode'] = $apartment->pincode;
                 $con['locality'] = $apartment->locality;
                 $con['activeDemandDetails'] = $demand;
-                $con['applyBy'] = $apartment->user_id;
+                $con['applyBy'] = $this->GetUserDetails($apartment->user_id)->name;
                 $con['applyDate'] = date("d-m-Y", strtotime($apartment->entry_date));
 
 
@@ -282,7 +277,7 @@ class ConsumerRepository
             $apartCount = 0;
             $consumerNo = '';
             $apartName = '';
-            $userId = 1;
+            $userId= $request->user()->id;
             
             if(isset($request->apartmentId))
             {
@@ -339,31 +334,11 @@ class ConsumerRepository
             $consumerType = consumerType::select('rate')
                             ->where('id', $request->consumerType)
                             ->first();
-
-            $taxRate = $consumerType->rate;
-            $demandFrom = strtotime(date('Y-m-d', strtotime($request->demandFrom)));
-            $demandUpto = strtotime(date('Y-m-d'));
-            $demand = array();
-            while ($demandFrom <= $demandUpto)
-            {
-                
-                $payment_from=date('Y-m-d', $demandFrom);
-                $payment_to=date('Y-m-t', strtotime($payment_from));
-                $demandFrom = strtotime('+1 month', $demandFrom);
-                $dmd = new Demand();
-                $dmd->setConnection($this->schema);
-                $dmd->consumer_id = $consumer->id;
-                $dmd->total_tax = $taxRate;
-                $dmd->payment_from = $payment_from;
-                $dmd->payment_to = $payment_to;
-                $dmd->paid_status = 0;
-                $dmd->user_id = $userId;
-                $dmd->date_time = date("Y-m-d H:i:s");
-                $dmd->demand_date = date('Y-m-d');
-                $dmd->deactivate_status = 0;
-                $dmd->save();
-                $demand[] = $dmd;
-            }
+            //Generate Demand
+            $demand = $this->GenerateDemand($this->schema, $consumer->id, $consumerType->rate, $request->demandFrom, $userId);
+            //
+            
+            $response = array();
             $response['wardNo'] = $request->wardNo;
             $response['apartmentId'] = $request->apartmentId;
             $response['holdingNo'] = $request->holdingNo;
@@ -458,7 +433,7 @@ class ConsumerRepository
 
     public function DeactivateConsumer(Request $request)
     {
-        $userId = 1;
+        $userId= $request->user()->id;
         try
         {   
             $response = array();
@@ -714,7 +689,7 @@ class ConsumerRepository
         try
         {   
             
-            $userId = 1;
+            $userId= $request->user()->id;
             $status = '';
             $data = '';
             $msg = '';
@@ -822,7 +797,7 @@ class ConsumerRepository
             $apartId = Null;
             $apartName = '';
             $apartCode = '';
-            $userId = 1;
+            $userId= $request->user()->id;
             $response = array();
 
             $getConsumer = Consumer::where('name', $request->consumerName)
@@ -886,31 +861,7 @@ class ConsumerRepository
                                 ->where('id', $request->consumerType)
                                 ->first();
 
-                $taxRate = $consumerType->rate;
-                $demandFrom = strtotime(date('Y-m-d', strtotime($request->demandFrom)));
-                $demandUpto = strtotime(date('Y-m-d'));
-                $demand = array();
-                while ($demandFrom <= $demandUpto)
-                {
-                    
-                    $payment_from=date('Y-m-d', $demandFrom);
-                    $payment_to=date('Y-m-t', strtotime($payment_from));
-                    $demandFrom = strtotime('+1 month', $demandFrom);
-                    
-                    $dmd = new Demand();
-                    $dmd->setConnection($this->schema);
-                    $dmd->consumer_id = $consumer->id;
-                    $dmd->total_tax = $taxRate;
-                    $dmd->payment_from = $payment_from;
-                    $dmd->payment_to = $payment_to;
-                    $dmd->paid_status = 0;
-                    $dmd->user_id = $userId;
-                    $dmd->date_time = date("Y-m-d H:i:s");
-                    $dmd->demand_date = date('Y-m-d');
-                    $dmd->deactivate_status = 0;
-                    $dmd->save();
-                    $demand[] = $dmd;
-                }
+                $demand = $this->GenerateDemand($this->schema, $consumer->id, $consumerType->rate, $request->demandFrom, $userId);
 
                 $response['wardNo'] = $request->wardNo;
                 $response['apartmentId'] = $request->apartmentId;
@@ -928,7 +879,7 @@ class ConsumerRepository
                 $response['consumerType'] = $consumerType->name;
                 $response['demandFrom'] = $request->demandFrom;
                 $response['demandDetails'] = $demand;
-                $response['appliedBy'] = $userId;
+                $response['appliedBy'] = $this->GetUserDetails($userId)->name;
                 $response['appliedDate'] = date('Y-m-d');
                 $msg = "Reanter created and demand generated successfully";
             }else{
@@ -948,7 +899,7 @@ class ConsumerRepository
         {
             if(isset($request->consumerId))
             {
-                $userId = 1;
+                $userId= $request->user()->id;
                 $consumerId = $request->consumerId;
                 $totalPayableAmt = $request->paidAmount;
                 $transcationDate = date('Y-m-d');
@@ -1097,7 +1048,7 @@ class ConsumerRepository
     {
         try
         {
-            if(isset($request->transactionNo))
+            if(isset($request->transactionNo) && isset($request->mode))
             {
                 $trans = Transaction::where('transaction_no', $request->transactionNo)->first();
                 if($trans == null)
@@ -1112,6 +1063,8 @@ class ConsumerRepository
                         $trans->pad_status = 2;
                     else
                         $trans->pad_status = 1;
+                    
+                    $trans->remarks = $request->remarks;
                     $trans->save();
                     
                     if($request->mode == 'Cheque')
@@ -1223,6 +1176,65 @@ class ConsumerRepository
         }
     }
 
+    public function ConsumerUpdate(Request $request)
+    {
+        try
+        {
+            $userId= $request->user()->id;
+            if(isset($request->consumerId) || isset($request->apartmentId))
+            {
+                $consumer = Consumer::query();
+                if(isset($request->consumerId))
+                    $consumer = $consumer->where('id', $request->consumerId);
+                
+                if(isset($request->apartmentId))
+                    $consumer = $consumer->where('apt_mstr_id', $request->apartmentId);
+                
+                $consumer = $consumer->first();
+                $oldConsumerTypeId = $consumer->consumer_type_id;
+                foreach($request->request as $key=>$value)
+                {
+                    //echo $key;
+                    if(($key != 'consumerId') && ($key != 'apartmentId') && ($key != 'consumerTypeId') && ($key !=  'demandFrom'))
+                    {
+                        $field_name = strtolower(preg_replace("/([^A-Z-])([A-Z])/", "$1_$2", $key));
+                        $consumer->{$field_name} = $value;
+                    }
+                    
+                }
+                $consumer->save();
+                
+                if(isset($request->demandFrom) && $request->consumerTypeId != $oldConsumerTypeId)
+                {
+                    $consumer->consumer_type_id = $request->consumerTypeId;
+                    $consumer->save();
+                    $consumerType = consumerType::select('rate')
+                            ->where('id', $request->consumerTypeId)
+                            ->first();
+
+                    $dmddata = Demand::where('consumer_id', $consumer->id)
+                                    ->where('paid_status', 0)
+                                    ->where('deactivate_status', 0);
+                    
+                    if($dmddata->count() > 0)
+                    {
+                        $dmddata = $dmddata->update(['deactivate_status'=> 1]);
+                        $this->GenerateDemand($this->schema, $consumer->id, $consumerType->rate, $request->demandFrom, $userId);
+                        
+                    }
+                }
+                $consumer->save();
+                
+                return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'Consumer Updated Successfully'], 200);
+            }else{
+                return response()->json(['status'=> False, 'data'=>'', 'msg'=> 'Undefined parameter supply'], 200);
+            }
+        }
+        catch(Exception $e)
+        {
+            return response()->json(['status' => False, 'data'=> '', 'msg'=>$e], 400);
+        }
+    }
     
 
 }

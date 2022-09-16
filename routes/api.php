@@ -34,38 +34,43 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
 
 
 
-    
-
-});
-
-Route::controller(ConsumerController::class)->group(function () {
-    Route::get('getConsumerList', 'GetConsumerList', function(){
-        return 'Success';
+    Route::controller(ConsumerController::class)->group(function () {
+        Route::get('getConsumerList', 'GetConsumerList', function(){
+            return 'Success';
+        });
+        Route::get('getConsumerDetailsById/{id}', 'GetConsumerList');
+        Route::get('getApartmentList', 'GetApartmentList');
+        Route::get('getApartmentDetailsById/{id}', 'GetApartmentDetailsById');
+        Route::post('postConsumerAdd', 'postConsumerAdd');
+        Route::get('getRenterFormData/{consumerId}', 'GetRenterFormData');
+        Route::get('getEditConsumerDetailsbyId/{id}', 'getEditConsumerDetailsById');
+        Route::post('postDeactivateConsumer', 'postDeactivateConsumer');
+        Route::post('getPaymentData', 'getPaymentData');
+        Route::post('postPayment', 'MakePayment');
+        Route::post('getCalculatedAmount', 'getCalculatedAmount');
+        Route::post('getDashboardData', 'getDashboardData');
+        Route::get('searchTransaction/{transactionNo}', 'searchTransaction');
+        Route::post('transactionDeactivate', 'transactionDeactivate');
+        Route::post('postRenterForn', 'RenterForm');
+        Route::get('getGeoLocation/{consumerId}', 'GetGeoLocation');
+        Route::post('getAllTransaction', 'GetAllTransaction');
+        Route::post('getCollectionSummary', 'AllCollectionSummary');
+        Route::post('postEditConsumerDetail', 'UpdateConsumerDetails');
+        Route::post('transactionModeChange', 'transactionModeChange');
+        
     });
-    Route::get('getConsumerDetailsById/{id}', 'GetConsumerList');
-    Route::get('getApartmentList', 'GetApartmentList');
-    Route::get('getApartmentDetailsById/{id}', 'GetApartmentDetailsById');
-    Route::post('postConsumerAdd', 'postConsumerAdd');
-    Route::get('getRenterFormData/{consumerId}', 'GetRenterFormData');
-    Route::get('getEditConsumerDetailsbyId/{id}', 'getEditConsumerDetailsById');
-    Route::post('postDeactivateConsumer', 'postDeactivateConsumer');
-    Route::post('getPaymentData', 'getPaymentData');
-    Route::post('postPayment', 'MakePayment');
-    Route::post('getCalculatedAmount', 'getCalculatedAmount');
-    Route::post('getDashboardData', 'getDashboardData');
-    Route::get('searchTransaction/{transactionNo}', 'searchTransaction');
-    Route::post('transactionDeactivate', 'transactionDeactivate');
-    Route::post('postRenterForn', 'RenterForm');
-    Route::get('getGeoLocation/{consumerId}', 'GetGeoLocation');
-    Route::post('getAllTransaction', 'GetAllTransaction');
-    Route::post('getCollectionSummary', 'AllCollectionSummary');
+
+    Route::controller(MasterController::class)->group(function () {
+        Route::get('getConsumerAddFormData', 'GetConsumerAddFormData');
+        Route::get('getApartmentListByWardNo/{wardNo}', 'GetApartmentListData');
+        Route::get('getConsumerTypeByCategory/{id}', 'GetConsumerType');
+    });
+
 });
 
-Route::controller(MasterController::class)->group(function () {
-    Route::get('getConsumerAddFormData', 'GetConsumerAddFormData');
-    Route::get('getApartmentListByWardNo/{wardNo}', 'GetApartmentListData');
-    Route::get('getConsumerTypeByCategory/{id}', 'GetConsumerType');
-});
+
+
+
 
 
 // Route::controller(ApartmentController::class)->group(function () {
