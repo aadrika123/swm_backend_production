@@ -40,4 +40,35 @@ class AuthController extends Controller
     {
         return $this->Repository->logout($req);
     }
+
+    public function CreateUser(Request $req)
+    {
+        return $this->Repository->CreateUser($req);
+    }
+
+    public function UpdateUser(Request $req)
+    {
+        return $this->Repository->UpdateUser($req);
+    }
+
+    public function getAllUser(Request $req)
+    {
+        return $this->Repository->getAllUser($req);
+    }
+
+    public function userActiveDeactive(Request $req)
+    {
+        return $this->Repository->makeUserActiveDeactive($req);
+    }
+
+    public function getUserFormDate(Request $req)
+    {
+        return $this->Repository->getUserFormDate($req);
+    }
+
+    public function getTcList(Request $req)
+    {
+        return $this->Repository->getTcList($req);
+    }
+    
 }

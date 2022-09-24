@@ -260,11 +260,99 @@ class ConsumerController extends Controller
      * Get Collection summery by the user.
      *
      * @param  $request
-     * @return ConsumerRepository->AllCollectionSummary
+     * @return ConsumerRepository->ConsumerUpdate
      */
     public function UpdateConsumerDetails(Request $req)
     {
         return $this->ConResp->ConsumerUpdate($req);
     }
+
+
+    /**
+     * Add new consumer reminder for payment.
+     *
+     * @param  $request
+     * @return ConsumerRepository->AddCosumerReminder
+     */
+    public function addConsumerReminder(Request $req)
+    {
+        return $this->ConResp->AddCosumerReminder($req);
+    }
+
+
+    /**
+     * get consumer reminder for payment.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function getConsumerReminder(Request $req)
+    {
+        return $this->ConResp->GetCosumerReminder($req);
+    }
+
+
+    /**
+     * Make apartment wise payment.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function ApartmentPayment(Request $req)
+    {
+        return $this->ConResp->GetCosumerReminder($req);
+    }
+
+
+
+    /**
+     * Make apartment deactivate.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function ApartmentDeactivate(Request $req)
+    {
+        return $this->ConResp->DeactivateApartment($req);
+    }
+
+
+
+    /**
+     * Get cash verification list.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function getCashVerificationList(Request $req)
+    {
+        return $this->ConResp->GetCaseVerificationList($req);
+    }
+
+
+    /**
+     * Get cash verification list.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function getCashVerificationFullDetails(Request $req)
+    {
+        return $this->ConResp->getCashVerificationFullDetails($req);
+    }
+
+
+
+    /**
+     * Get cash verification list.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetCosumerReminder
+     */
+    public function CashVerification(Request $req)
+    {
+        return $this->ConResp->CashVerification($req);
+    }
+    
 
 }

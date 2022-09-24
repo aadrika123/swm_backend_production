@@ -12,4 +12,8 @@ class TblUserMstr extends Model
     //protected $connection = 'mysql';
     public $timestamps = false;
     protected $table = 'tbl_user_mstr';
+
+    // protected $fillable = [
+    //     'status'
+    // ];
 }

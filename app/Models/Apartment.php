@@ -12,4 +12,12 @@ class Apartment extends Model
     public $timestamps = false;
     protected $table = 'tbl_apt_details_mstr';
     
+    // public function GetSchema($ulb_id)
+    // {
+    //     if(isset($ulb_id))
+    //     {
+    //         $ulb = Ulb::find($ulb_id);
+    //         return $ulb->db_name;
+    //     }
+    // }
 }
