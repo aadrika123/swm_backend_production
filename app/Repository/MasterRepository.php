@@ -22,6 +22,24 @@ use App\Traits\Api\Helpers;
 class MasterRepository
 {
     use Helpers;
+
+    protected $dbConn;
+    protected $Apartment;
+    protected $ConsumerType;
+    protected $ConsumerCategory;
+    protected $Ward;
+
+    public function __construct(Request $request)
+    {
+
+        $this->dbConn = $this->GetSchema($request->bearerToken());
+
+        $this->Ward = new Ward($this->dbConn);
+        $this->Apartment = new Apartment($this->dbConn);
+        $this->ConsumerType = new ConsumerType($this->dbConn);
+        $this->ConsumerCategory = new ConsumerCategory($this->dbConn);
+    }
+
     public function getConsumerFormDate(Request $request)
     {
 
@@ -29,8 +47,8 @@ class MasterRepository
         {   
             
             $responseData = array();
-            $responseData['wardList'] = Ward::get();
-            $responseData['consumerCategory'] = ConsumerCategory::get();
+            $responseData['wardList'] = $this->Ward->get();
+            $responseData['consumerCategory'] = $this->ConsumerCategory->get();
             $responseData['initialDemandDate'] = "01-01-2022";
             
             return response()->json(['status'=> True, 'data'=>$responseData, 'msg'=> ''], 200);
@@ -48,16 +66,50 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            $this->schema = $this->GetSchema($request->ulbId);
             if(isset($request->wardNo))
             {
-                $aptlist = Apartment::where('ward_no', $request->wardNo)
-                                                    ->get();
+                $aptlist = $this->Apartment->where('ward_no', $request->wardNo)
+                                    ->orderBy('id', 'DESC')
+                                    ->get();
             
             }else
-                $aptlist = Apartment::get();
+                $aptlist = $this->Apartment->orderBy('id', 'DESC')->get();
             
             $responseData['apartmentList'] = $aptlist;
+            return response()->json(['status'=> True, 'data'=>$responseData, 'msg'=> ''], 200);
+        } 
+        catch (Exception $e) 
+        {
+            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+        }
+        
+    }
+
+
+    public function getApartmentById(Request $request)
+    {
+
+        try
+        {   
+            $responseData = array();
+            
+            if(isset($request->id))
+            {
+                $apt = $this->Apartment->where('id', $request->id)
+                                                    ->first();
+                if($apt)
+                {
+                    $responseData['id'] = $apt->id;
+                    $responseData['aptName'] = $apt->apt_name;
+                    //changed by talib
+                    $responseData['wardNo'] = $apt->ward_no;
+                    //changed by talib
+                    $responseData['aptCode'] = $apt->apt_code;
+                    $responseData['aptAddress'] = $apt->apt_address;
+                }
+            }
+            
+            
             return response()->json(['status'=> True, 'data'=>$responseData, 'msg'=> ''], 200);
         } 
         catch (Exception $e) 
@@ -76,7 +128,7 @@ class MasterRepository
             $responseData = array();
             
             if(isset($request->id))
-                $responseData['consumerTypeList'] = ConsumerType::where('consumer_category_id', $request->id)
+                $responseData['consumerTypeList'] = $this->ConsumerType->where('consumer_category_id', $request->id)
                                                     ->get();
             
             return response()->json(['status'=> True, 'data'=>$responseData, 'msg'=> ''], 200);
@@ -99,6 +151,9 @@ class MasterRepository
                 'apartmentName' => 'required',
                 'address' => 'required',
                 'apartmentId' => 'required',
+                //changed by talib
+                'apartmentCode' => 'required',
+                //changed by talib
             ]);
             if ($validator->fails()) {    
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
@@ -107,10 +162,13 @@ class MasterRepository
             if(isset($request->apartmentId))
             {
                 
-                $apartment = Apartment::find($request->apartmentId);
+                $apartment = $this->Apartment->find($request->apartmentId);
                 $apartment->ward_no  =  $request->wardNo; 
                 $apartment->apt_name  =  $request->apartmentName;
                 $apartment->apt_address  =  $request->address;
+                //changed by talib
+                $apartment->apt_code  =  $request->apartmentCode;
+                //changed by talib
                 $apartment->save();         
                 
                 return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'Apartment updated successfully'], 200);
@@ -141,14 +199,12 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
 
-            $this->schema = $this->GetSchema($request->ulbId);
             
-            $apartment = new Apartment();
-            $apartment->setConnection($this->schema);
+            $apartment = $this->Apartment;
             $apartment->ward_no  =  $request->wardNo; 
-            $apartment->apt_name  =  $request->apartmentName;
+            $apartment->apt_name  =  $request->aptName;
             $apartment->apt_code  =  $request->aptCode;
-            $apartment->apt_address  =  $request->address;
+            $apartment->apt_address  =  $request->aptAddress;
             $apartment->save();         
             // if($apartment->id)
             // {
@@ -173,7 +229,7 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            $records = ConsumerCategory::get();
+            $records = $this->ConsumerCategory->orderBy('id', 'DESC')->get();
             
             foreach($records as $record)
             {
@@ -206,11 +262,9 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
 
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
 
             $responseData = array();
-            $catgory = new ConsumerCategory();
-            $catgory->setConnection($this->schema);
+            $catgory = $this->ConsumerCategory;
             $catgory['name'] = $request->consumerCategory;
             $catgory->save();
             
@@ -240,10 +294,9 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
 
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
 
             $responseData = array();
-            $catgory = ConsumerCategory::find($request->id);
+            $catgory = $this->ConsumerCategory->find($request->id);
             $catgory['name'] = $request->consumerCategory;
             $catgory->save();
             
@@ -263,17 +316,16 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            if(isset($request->id) && isset($request->ulbId))
+            if(isset($request->id))
             {
-                $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
+
 
                 
-                $catgory = ConsumerCategory::find($request->id);
+                $catgory = $this->ConsumerCategory->find($request->id);
                 if($catgory->id)
                 {
                     $responseData['consumerCategory'] = $catgory->name;
                     $responseData['id'] = $catgory->id;
-                    $responseData['ulbId'] = $request->ulbId;
                 
                 
                     $msg = "Consumer Category Updated successfully";
@@ -300,10 +352,10 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
             
-            $contypes = ConsumerType::select('tbl_consumer_type.*, c.name as cat_name')
-                                                            ->join('tbl_consumer_category as c', 'c.consumer_category_id', '=', 'tbl_consumer_type.id')
+            $contypes = $this->ConsumerType->select('tbl_consumer_type.*', 'c.name as cat_name')
+                                                            ->join('tbl_consumer_category as c', 'tbl_consumer_type.consumer_category_id', '=', 'c.id')
+                                                            ->orderBy('tbl_consumer_type.id', 'DESC')
                                                             ->get();
             
             foreach($contypes as $contype)
@@ -341,10 +393,8 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
             
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
-                
-            $conType = new consumerType();
-            $conType->setConnection($this->schema);
+
+            $conType = $this->ConsumerType;
             $conType->consumer_category_id  =  $request->consumerCategory; 
             $conType->name  =  $request->consumerType;
             $conType->rate  =  $request->rate;
@@ -377,9 +427,10 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
             
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
+
+            
                 
-            $conType = consumerType::find($request->id);
+            $conType = $this->ConsumerType->find($request->id);
             $conType->consumer_category_id  =  $request->consumerCategory; 
             $conType->name  =  $request->consumerType;
             $conType->rate  =  $request->rate;
@@ -401,13 +452,13 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            if(isset($request->id) && isset($request->ulbId))
+            if(isset($request->id))
             {
-                $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
+
 
                 
-                $contype = ConsumerType::select('tbl_consumer_type.*, c.name as cat_name')
-                                        ->join('tbl_consumer_category as c', 'c.consumer_category_id', '=', 'tbl_consumer_type.id')
+                $contype = $this->ConsumerType->select('tbl_consumer_type.*', 'c.name as cat_name')
+                                        ->join('tbl_consumer_category as c', 'tbl_consumer_type.consumer_category_id', '=', 'c.id')
                                         ->where('tbl_consumer_type.id', $request->id)
                                         ->first();
                 if($contype->id)
@@ -419,7 +470,7 @@ class MasterRepository
                     $responseData['rate'] = $contype->rate;
                 
                 
-                    $msg = "Consumer Category Updated successfully";
+                    $msg = "";
                 }else
                     $msg = "Record Not found";
                 
@@ -444,7 +495,7 @@ class MasterRepository
         {   
             $responseData = array();
             
-            $ulblist = ulb::get();
+            $ulblist = ulb::orderBy('id', 'DESC')->get();
             
             foreach($ulblist as $ulb)
             {
@@ -597,14 +648,13 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            //$this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
             
-            $wards = Ward::get();
+            $wards = $this->Ward->orderBy('id', 'DESC')->get();
             
             foreach($wards as $ward)
             {
                 $val['id'] = $ward->id;
-                $val['wardNo'] = $ward->ward_no;
+                $val['wardNo'] = $ward->name;
                 $responseData[] = $val;
             }
             
@@ -632,10 +682,8 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
             
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
                 
-            $ward = new Ward();
-            $ward->setConnection($this->schema);
+            $ward = $this->Ward;
             $ward->name  =  $request->wardNo; 
             $ward->save();         
             
@@ -664,10 +712,9 @@ class MasterRepository
                 return response()->json(['status'=> False, 'msg' => $validator->messages()]);
             }
             
-            $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
                 
-            $ward = Ward::find($request->id);
-            $ward->ward_no  =  $request->wardNo; 
+            $ward = $this->Ward->find($request->id);
+            $ward->name  =  $request->wardNo; 
             $ward->save();         
             
             return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'Consumer Type Updated successfully'], 200);  
@@ -686,12 +733,11 @@ class MasterRepository
         try
         {   
             $responseData = array();
-            if(isset($request->wardId) && isset($request->ulbId))
+            if(isset($request->wardId))
             {
-                $this->schema = $this->GetSchema($request->ulbId); // For get connection driver for connect database
 
                 
-                $ward = Ward::find($request->wardId);
+                $ward = $this->Ward->find($request->wardId);
                 if($ward->id)
                 {
                     $responseData['wardId'] = $ward->id;

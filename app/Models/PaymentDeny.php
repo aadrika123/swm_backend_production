@@ -5,12 +5,12 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Consumer extends Model
+class PaymentDeny extends Model
 {
     use HasFactory;
     protected $connection;
     public $timestamps = false;
-    protected $table = 'tbl_consumer';
+    protected $table = 'tbl_payment_deny_details';
 
     public function __construct($data = null)
     {

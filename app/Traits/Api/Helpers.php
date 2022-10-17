@@ -3,7 +3,10 @@
 namespace App\Traits\Api;
 use App\Models\Demand;
 use App\Models\ViewUser;
+use App\Models\Ward;
 use App\Models\Ulb;
+use App\Models\TblUserMstr;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -14,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  */
 trait Helpers
 {
-    
+    public static $dbname = null;
     static function GenerateDemand($schema, $consumerId, $taxrate, $demandFrom, $userId)
     {
 
@@ -50,14 +53,14 @@ trait Helpers
         return $user;
     }
 
-    static function GetMonthlyFee($responseId, $type)
+    static function GetMonthlyFee($dbConn, $responseId, $type)
     {
-        $schema = 'db_ranchi';
+        
         $response = array();
         if(isset($responseId) && $type == 'Consumer')
         {
-            
-            $dmd = Demand::where('consumer_id', $responseId)
+            $dmd = new Demand($dbConn);
+            $dmd = $dmd->where('consumer_id', $responseId)
                 ->where('paid_status', 1)
                 ->where('deactivate_status', 0)
                 ->orderby('id', 'desc')
@@ -73,7 +76,7 @@ trait Helpers
             join tbl_consumer c on d.consumer_id=c.id
             where c.apt_mstr_id=".$responseId." and d.paid_status=1 and d.deactivate_status=0 group by d.consumer_id";
             
-            $dmds = DB::connection($schema)->select($sql);
+            $dmds = DB::connection($dbConn)->select($sql);
             $total_tax = 0.00;
             $payUpto = '';
             foreach($dmds as $d)
@@ -91,14 +94,13 @@ trait Helpers
         return $response;
     }
 
-    static function GetDemand($responseId, $type)
+    static function GetDemand($dbConn, $responseId, $type)
     {
-        $schema = 'db_ranchi';
         $response = array();
         if(isset($responseId) && $type == 'Consumer')
         {
-            
-            $dmds = Demand::where('consumer_id', $responseId)
+            $dmds = new Demand($dbConn);
+            $dmds = $dmds->where('consumer_id', $responseId)
                 ->where('paid_status', 0)
                 ->where('deactivate_status', 0)
                 ->orderby('id', 'desc')
@@ -107,39 +109,75 @@ trait Helpers
             
             $total_tax = 0.00;
             $payUpto = '';
+            $payFrom = '';
+            $i = 0;
             foreach($dmds as $d)
             {
                 $total_tax += $d->total_tax;
                 $payUpto = date('d-m-Y', strtotime($d->payment_to));
+                if($i == 0)
+                    $payFrom = date('d-m-Y', strtotime($d->payment_from));
+                $i++;
             }    
 
         }
         
         if(isset($responseId) && $type == 'Apartment')
         {
-            $sql = "SELECT d.consumer_id,d.total_tax,d.payment_to FROM tbl_demand d 
+            $sql = "SELECT d.consumer_id,d.total_tax,d.payment_to,d.payment_from FROM tbl_demand d 
             join tbl_consumer c on d.consumer_id=c.id
-            where c.apt_mstr_id=".$responseId." and d.paid_status=0 and d.deactivate_status=0 group by d.consumer_id,d.total_tax,d.payment_to";
+            where c.apt_mstr_id=".$responseId." and d.paid_status=0 and d.deactivate_status=0  group by d.consumer_id,d.total_tax,d.payment_to,d.payment_from";
             
-            $dmds = DB::connection($schema)->select($sql);
+            $dmds = DB::connection($dbConn)->select($sql);
             $total_tax = 0.00;
             $payUpto = '';
+            $payFrom = '';
+            $i = 0;
             foreach($dmds as $d)
             {
                 
                 if($dmds){
                     $total_tax += $d->total_tax;
                     $payUpto = date('d-m-Y', strtotime($d->payment_to));
+                    if($i == 0)
+                        $payFrom = date('d-m-Y', strtotime($d->payment_from));
+                    $i++;
                 }
             }
         }
         
         $response['demandAmt'] = $total_tax;
+        $response['demandFrom'] = $payFrom;
         $response['demandUpto'] = $payUpto;
         return $response;
     }
 
-    static function GetUlbs($user_id)
+    static function GetAllWard($ulb_id, $user_id, $Ward)
+    {
+        if(isset($user_id))
+        {
+            $sql = "SELECT ward_id FROM tbl_user_ward w
+            JOIN tbl_ulb_list u on w.ulb_id=u.id
+            WHERE user_id=".$user_id. " and ulb_id=".$ulb_id." and w.stts=1 group by ward_id";
+            
+            $ulbs = DB::select($sql);
+            $wardarr = array();
+            if($ulbs)
+            {
+                foreach($ulbs as $u)
+                {
+                    $getward = $Ward->where('id', $u->ward_id)
+                                    ->first();
+                    if($getward)
+                        $wardarr[] = $getward->name;
+                }
+                
+            }
+            return $wardarr;
+        }
+    }
+
+    public function GetUlbs($user_id)
     {
         if(isset($user_id))
         {
@@ -164,13 +202,51 @@ trait Helpers
         }
     }
 
-    static function GetSchema($ulb_id)
+    public function GetUlbsWithWard($user_id, $Ward)
     {
-        if(isset($ulb_id))
+        if(isset($user_id))
         {
-            $ulb = Ulb::find($ulb_id);
+            $sql = "SELECT w.ulb_id,ulb_name,ulb FROM tbl_user_ward w
+            JOIN tbl_ulb_list u on w.ulb_id=u.id
+            WHERE user_id=".$user_id. " and w.stts=1 group by w.ulb_id, ulb_name,ulb";
+            
+            $ulbs = DB::select($sql);
+            $ulbarr = array();
+            if($ulbs)
+            {
+                foreach($ulbs as $u)
+                {
+                    $val['ulbId'] = $u->ulb_id;
+                    $val['ulbName'] = $u->ulb_name;
+                    $val['ulb'] = $u->ulb;
+                    $val['wards'] = $this->GetAllWard($u->ulb_id, $user_id, $Ward);
+                    $ulbarr[] = $val;
+                }
+                
+            }
+            return $ulbarr;
+        }
+    }
+
+
+    
+
+    static function GetSchema($token)
+    {
+        if(isset($token) && $token <> '')
+        {
+            $user = TblUserMstr::where('remember_token', $token)->first();
+            if($user)
+                $current_ulb = $user->current_ulb;
+            else
+                $current_ulb = 21;
+            $ulb = Ulb::find($current_ulb);
+            // print_r($ulb);
+            // //Session::put('ulb', $ulb->db_name);
             return $ulb->db_name;
         }
     }
+
+
 
 }

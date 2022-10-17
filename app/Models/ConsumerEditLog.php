@@ -1,20 +1,20 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Support\Facades\Session;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Consumer extends Model
+class ConsumerEditLog extends Model
 {
     use HasFactory;
-    protected $connection;
     public $timestamps = false;
-    protected $table = 'tbl_consumer';
+    protected $table = 'tbl_log_edit_consumer_details';
+
 
     public function __construct($data = null)
     {
-        //$this->connection = Session::get('ulb');
+       // $this->connection = Session::get('ulb');
         $this->connection = $data;
     }
 }

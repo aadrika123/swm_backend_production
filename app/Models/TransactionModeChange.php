@@ -1,16 +1,15 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Support\Facades\Session;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Consumer extends Model
+class TransactionModeChange extends Model
 {
     use HasFactory;
-    protected $connection;
     public $timestamps = false;
-    protected $table = 'tbl_consumer';
+    protected $table = 'tbl_transaction_mode_change';
 
     public function __construct($data = null)
     {

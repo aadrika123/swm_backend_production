@@ -3,7 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConsumerController;
 use App\Http\Controllers\MasterController;
-//use App\Http\Controllers\ApartmentController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,11 +23,12 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('postChangePassword', 'ChangePassword');        // Route for Change Password
     Route::post('logOut', 'Logout');                            // Route for user Logout
     Route::post('createUser', 'CreateUser');                    // Route for create user
-    Route::post('updateUser', 'UpdateUser');                    // Route for update user
+   
     Route::post('getAlluser', 'getAllUser');                    // Route for get all user
     Route::post('userActiveDeactive', 'userActiveDeactive');    // Route for user activate and deactivate
     Route::post('getUserFormDate', 'getUserFormDate');          // Route for user form data
     Route::post('getTcList', 'getTcList');                      // Route for get tc list ulb wise
+    Route::post('ulbSwitch', 'ulbSwitch');                      // Route for ulb switching
     
 });
 
@@ -36,7 +37,9 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
     // Route::get('test', function () {
     //     return 'Success';
     // });
-    
+    Route::controller(AuthController::class)->group(function () {
+        Route::post('updateUser', 'UpdateUser');                    // Route for update user
+    });
 
 
 
@@ -72,6 +75,16 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
         Route::post('getCashVerificationFullDetails', 'getCashVerificationFullDetails');
         Route::post('postCashVerification', 'CashVerification');
         
+        Route::post('postClearanceForm', 'ClearanceForm');                           // Route for make bank reconciliation
+        Route::post('getBankReconciliationList', 'GetBankReconciliationList');        // Route for get bank reconciliation
+        
+        Route::post('ApartmentDetailsById', 'GetApartmentDetailsById');
+        Route::post('getConsumerListByCategory', 'ConsumerListByCategory');
+        Route::post('postPaymentDeny', 'PaymentDeny');
+        Route::post('getPaymentDenyList', 'PaymentDenyList');
+
+        Route::post('getReprintData', 'getReprintData');
+        
     });
 
     Route::controller(MasterController::class)->group(function () {
@@ -82,11 +95,12 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
         Route::put('updateApartment', 'updateApartment');
         Route::post('addApartment', 'addApartment');
         Route::get('getApartList', 'GetApartmentListData');
+        Route::get('getApartmentById', 'getApartmentById');
         
         Route::get('getConsumerCategoryList', 'getConsumerCategoryList');
         Route::post('postConsumerCategoryAdd', 'ConsumerCategoryAdd');
         Route::put('postConsumerCategoryUpdate', 'ConsumerCategoryUpdate');
-        Route::post('getonsumerCategoryById', 'ConsumerCategoryById');
+        Route::post('getConsumerCategoryById', 'ConsumerCategoryById');
         
         Route::post('getConsumerTypeList', 'ConsumerTypeList');
         Route::post('postConsumerTypeAdd', 'ConsumerTypeAdd');
@@ -103,6 +117,12 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
         Route::post('postWardAdd', 'WardAdd');
         Route::put('postWardUpdate', 'WardUpdate');
         Route::put('getWardListById', 'WardById');
+    });
+
+
+    Route::controller(ReportController::class)->group(function () {
+        Route::get('test', 'text');                              // Route for user Login
+        Route::post('getReportData', 'GetReportData');              // Route for get all type of report
     });
 
 });

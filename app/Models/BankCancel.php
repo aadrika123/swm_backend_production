@@ -5,12 +5,12 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Consumer extends Model
+class BankCancel extends Model
 {
     use HasFactory;
     protected $connection;
     public $timestamps = false;
-    protected $table = 'tbl_consumer';
+    protected $table = 'tbl_bank_cancel';
 
     public function __construct($data = null)
     {

@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Laravel\Sanctum\HasApiTokens;
 
-class TblUserMstr extends Model
+class UserLoginDetail extends Model
 {
-    use HasFactory, HasApiTokens;
+    use HasFactory;
     public $timestamps = false;
-    protected $table = 'tbl_user_mstr';
-
+    protected $table = 'tbl_user_login_details';
 }

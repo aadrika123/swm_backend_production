@@ -32,6 +32,12 @@ class MasterController extends Controller
         return $this->Mstr->getApartmentList($req);
     }
 
+    public function getApartmentById(Request $req)
+    {
+        return $this->Mstr->getApartmentById($req);
+    }
+    
+
     public function GetConsumerTypeByCategoryId(Request $req)
     {
         return $this->Mstr->GetConsumerTypeByCategoryId($req);

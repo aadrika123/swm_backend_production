@@ -296,11 +296,11 @@ class ConsumerController extends Controller
      * Make apartment wise payment.
      *
      * @param  $request
-     * @return ConsumerRepository->GetCosumerReminder
+     * @return ConsumerRepository->makeApartmentPayment
      */
     public function ApartmentPayment(Request $req)
     {
-        return $this->ConResp->GetCosumerReminder($req);
+        return $this->ConResp->makeApartmentPayment($req);
     }
 
 
@@ -309,7 +309,7 @@ class ConsumerController extends Controller
      * Make apartment deactivate.
      *
      * @param  $request
-     * @return ConsumerRepository->GetCosumerReminder
+     * @return ConsumerRepository->DeactivateApartment
      */
     public function ApartmentDeactivate(Request $req)
     {
@@ -322,7 +322,7 @@ class ConsumerController extends Controller
      * Get cash verification list.
      *
      * @param  $request
-     * @return ConsumerRepository->GetCosumerReminder
+     * @return ConsumerRepository->GetCaseVerificationList
      */
     public function getCashVerificationList(Request $req)
     {
@@ -334,7 +334,7 @@ class ConsumerController extends Controller
      * Get cash verification list.
      *
      * @param  $request
-     * @return ConsumerRepository->GetCosumerReminder
+     * @return ConsumerRepository->getCashVerificationFullDetails
      */
     public function getCashVerificationFullDetails(Request $req)
     {
@@ -347,12 +347,86 @@ class ConsumerController extends Controller
      * Get cash verification list.
      *
      * @param  $request
-     * @return ConsumerRepository->GetCosumerReminder
+     * @return ConsumerRepository->CashVerification
      */
     public function CashVerification(Request $req)
     {
         return $this->ConResp->CashVerification($req);
     }
+
+
+    /**
+     * Make Bank Reconcilliation.
+     *
+     * @param  $request
+     * @return ConsumerRepository->ClearanceForm
+     */
+    public function ClearanceForm(Request $req)
+    {
+        return $this->ConResp->ClearanceForm($req);
+    }
+
+
+    /**
+     * Get Bank Reconcilliation.
+     *
+     * @param  $request
+     * @return ConsumerRepository->BankReconciliationList
+     */
+    public function GetBankReconciliationList(Request $req)
+    {
+        return $this->ConResp->BankReconciliationList($req);
+    }
+
+
+
+    /**
+     * Get consumer list by category.
+     *
+     * @param  $request
+     * @return ConsumerRepository->ConsumerListByCategory
+     */
+    public function ConsumerListByCategory(Request $req)
+    {
+        return $this->ConResp->ConsumerListByCategory($req);
+    }
+
+    
+    /**
+     * Make payment denied.
+     *
+     * @param  $request
+     * @return ConsumerRepository->PaymentDeny
+     */
+    public function PaymentDeny(Request $req)
+    {
+        return $this->ConResp->PaymentDeny($req);
+    }
+
+
+    /**
+     * Payment denied list.
+     *
+     * @param  $request
+     * @return ConsumerRepository->PaymentDenyList
+     */
+    public function PaymentDenyList(Request $req)
+    {
+        return $this->ConResp->PaymentDenyList($req);
+    }
+    
+
+     /**
+     * Payment receipt date.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetReprintData
+     */
+    public function getReprintData(Request $req)
+    {
+        return $this->ConResp->GetReprintData($req);
+    }
+
     
 
 }
