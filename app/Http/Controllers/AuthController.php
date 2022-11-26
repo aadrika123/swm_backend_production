@@ -75,5 +75,29 @@ class AuthController extends Controller
     {
         return $this->Repository->ulbSwitch($req);
     }
+
+    public function MenuPermission(Request $req)
+    {
+        return $this->Repository->MenuPermission($req);
+    }
+
+    public function MenuPermissionList(Request $req)
+    {
+        return $this->Repository->MenuPermissionList($req);
+    }
+
+    public function UpdateMenuPermission(Request $req)
+    {
+        return $this->Repository->UpdateMenuPermission($req);
+    }
+
+    public function MenuPermissionByUserType(Request $req)
+    {
+        return $this->Repository->MenuPermissionByUserType($req);
+    }
+
+    
+    
+    
     
 }

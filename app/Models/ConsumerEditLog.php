@@ -9,12 +9,12 @@ class ConsumerEditLog extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'tbl_log_edit_consumer_details';
+    protected $table = 'swm_log_consumers';
 
 
     public function __construct($data = null)
     {
-       // $this->connection = Session::get('ulb');
+        // $this->connection = Session::get('ulb');
         $this->connection = $data;
     }
 }

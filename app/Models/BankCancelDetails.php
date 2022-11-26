@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+
 use Illuminate\Support\Facades\Session;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ class BankCancelDetails extends Model
     use HasFactory;
     protected $connection;
     public $timestamps = false;
-    protected $table = 'tbl_bank_cancel_details';
+    protected $table = 'swm_bank_reconcile_details';
 
     public function __construct($data = null)
     {

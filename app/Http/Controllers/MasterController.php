@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Repository\MasterRepository;
+use App\Repository\iMasterRepository;
 use Exception;
 
 class MasterController extends Controller
@@ -16,10 +16,9 @@ class MasterController extends Controller
 
     //  Initializing construct function for Repositoy
     protected $master;
-    public function __construct(MasterRepository $master)
+    public function __construct(iMasterRepository $master)
     {
         $this->Mstr = $master;
-
     }
 
     public function GetConsumerAddFormData(Request $req)
@@ -36,7 +35,7 @@ class MasterController extends Controller
     {
         return $this->Mstr->getApartmentById($req);
     }
-    
+
 
     public function GetConsumerTypeByCategoryId(Request $req)
     {
@@ -123,7 +122,7 @@ class MasterController extends Controller
     {
         return $this->Mstr->WardList($req);
     }
-    
+
     public function WardAdd(Request $req)
     {
         return $this->Mstr->WardAdd($req);
@@ -139,4 +138,3 @@ class MasterController extends Controller
         return $this->Mstr->WardById($req);
     }
 }
-

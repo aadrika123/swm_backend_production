@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Repository\ConsumerRepository;
+use App\Repository\iConsumerRepository;
 
 class ConsumerController extends Controller
 {
@@ -15,13 +15,12 @@ class ConsumerController extends Controller
 
     //  Initializing construct function for Repositoy
     protected $consumer;
-    public function __construct(ConsumerRepository $consumer)
+    public function __construct(iConsumerRepository $consumer)
     {
         $this->ConResp = $consumer;
-
     }
 
-    
+
 
     /**
      * Get consumer list according to mobile no or name.
@@ -31,7 +30,7 @@ class ConsumerController extends Controller
      */
     public function GetConsumerList(Request $req)
     {
-        return $this->ConResp->ConsumerList($req); 
+        return $this->ConResp->ConsumerList($req);
     }
 
 
@@ -115,7 +114,7 @@ class ConsumerController extends Controller
 
 
     /**
-     * Get payment deatails.
+     * Get payment details.
      *
      * @param  $request
      * @return ConsumerRepository->PaymentData
@@ -167,7 +166,7 @@ class ConsumerController extends Controller
 
 
     /**
-     * Get transaction details by transction no.
+     * Get transaction details by transaction no.
      *
      * @param  $request
      * @return ConsumerRepository->GetTrancation
@@ -215,7 +214,16 @@ class ConsumerController extends Controller
         return $this->ConResp->AddRenter($req);
     }
 
-
+    /**
+     * Add geo location.
+     *
+     * @param  $request
+     * @return ConsumerRepository->AddGeoTagging
+     */
+    public function AddGeoTagging(Request $req)
+    {
+        return $this->ConResp->AddGeoTagging($req);
+    }
 
     /**
      * Get geo location.
@@ -391,7 +399,7 @@ class ConsumerController extends Controller
         return $this->ConResp->ConsumerListByCategory($req);
     }
 
-    
+
     /**
      * Make payment denied.
      *
@@ -414,9 +422,9 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->PaymentDenyList($req);
     }
-    
 
-     /**
+
+    /**
      * Payment receipt date.
      *
      * @param  $request
@@ -427,6 +435,169 @@ class ConsumerController extends Controller
         return $this->ConResp->GetReprintData($req);
     }
 
-    
 
+
+    /**
+     * Get Demand Receipt.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetDemandReceipt
+     */
+    public function GetDemandReceipt(Request $req)
+    {
+        return $this->ConResp->GetDemandReceipt($req);
+    }
+
+
+    /**
+     * Denial Notification.
+     *
+     * @param  $request
+     * @return ConsumerRepository->DenialNotificationList
+     */
+    public function DenialNotificationList(Request $req)
+    {
+        return $this->ConResp->DenialNotificationList($req);
+    }
+
+
+    /**
+     * Payment Adjustment
+     *
+     * @param  $request
+     * @return ConsumerRepository->DenialNotificationList
+     */
+    public function PaymentAdjustment(Request $req)
+    {
+        return $this->ConResp->PaymentAdjustment($req);
+    }
+
+
+    /**
+     * Consumer and apartment list by ward no.
+     *
+     * @param  $request
+     * @return ConsumerRepository->ConsumerOrApartmentList
+     */
+    public function ConsumerOrApartmentList(Request $req)
+    {
+        return $this->ConResp->ConsumerOrApartmentList($req);
+    }
+
+
+    /**
+     * Get reminder list
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetReminderList
+     */
+    public function GetReminderList(Request $req)
+    {
+        return $this->ConResp->GetReminderList($req);
+    }
+
+    /**
+     * Get Consumer/Apartment Past Transaction
+     *
+     * @param  $request
+     * @return ConsumerRepository->ConsumerPastTransactions
+     */
+    public function ConsumerPastTransactions(Request $req)
+    {
+        return $this->ConResp->ConsumerPastTransactions($req);
+    }
+
+
+    /**
+     * Add Tc Complain 
+     *
+     * @param  $request
+     * @return ConsumerRepository->addTcComplain
+     */
+    public function TcComplain(Request $req)
+    {
+        return $this->ConResp->addTcComplain($req);
+    }
+
+    /**
+     * get Tc Complain 
+     *
+     * @param  $request
+     * @return ConsumerRepository->getTcComplain
+     */
+    public function getComplainList(Request $req)
+    {
+        return $this->ConResp->getTcComplain($req);
+    }
+
+
+    /**
+     * add routes 
+     *
+     * @param  $request
+     * @return ConsumerRepository->addRoute
+     */
+    public function addRoute(Request $req)
+    {
+        return $this->ConResp->addRoute($req);
+    }
+
+    
+    /**
+     * get routes 
+     *
+     * @param  $request
+     * @return ConsumerRepository->RouteList
+     */
+    public function RouteList(Request $req)
+    {
+        return $this->ConResp->RouteList($req);
+    }
+    
+    /**
+     * get route by id
+     *
+     * @param  $request
+     * @return ConsumerRepository->RouteDataById
+     */
+    public function RouteDataById(Request $req)
+    {
+        return $this->ConResp->RouteDataById($req);
+    }
+
+    /**
+     * update route
+     *
+     * @param  $request
+     * @return ConsumerRepository->RouteDataById
+     */
+    public function updateRoute(Request $req)
+    {
+        return $this->ConResp->updateRoute($req);
+    }
+
+    /**
+     * Delete route
+     *
+     * @param  $request
+     * @return ConsumerRepository->RouteDataById
+     */
+    public function DeleteRoute(Request $req)
+    {
+        return $this->ConResp->DeleteRoute($req);
+    }
+    
+    /**
+     * payment adjustment list
+     *
+     * @param  $request
+     * @return ConsumerRepository->PaymentAdjustmentList
+     */
+    public function PaymentAdjustmentList(Request $req)
+    {
+        return $this->ConResp->PaymentAdjustmentList($req);
+    }
+
+    
+    
 }

@@ -9,7 +9,7 @@ class TransactionModeChange extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'tbl_transaction_mode_change';
+    protected $table = 'swm_log_transaction_mode';
 
     public function __construct($data = null)
     {

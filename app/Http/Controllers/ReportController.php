@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Repository\ReportRepository;
+use App\Repository\iReportRepository;
 
 class ReportController extends Controller
 {
     protected $report;
 
-    public function __construct(ReportRepository $report)
+    public function __construct(iReportRepository $report)
     {
         $this->rep = $report;
     }
@@ -18,8 +18,4 @@ class ReportController extends Controller
     {
         return $this->rep->ReportData($request);
     }
-
-    
-
-
 }

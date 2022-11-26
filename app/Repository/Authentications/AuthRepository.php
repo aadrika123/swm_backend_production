@@ -9,6 +9,8 @@ use App\Models\UserWardPermission;
 use App\Models\Ward;
 use App\Models\Ulb;
 use App\Models\UserLoginDetail;
+use App\Models\MenuMaster;
+use App\Models\MenuPermission;
 use App\Repository\Authentications\iAuth;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -35,7 +37,6 @@ class AuthRepository implements iAuth
         $this->dbConn = $this->GetSchema($request->bearerToken());
 
         $this->Ward = new Ward($this->dbConn);
-
     }
     public function login(Request $req)
     {
@@ -50,7 +51,7 @@ class AuthRepository implements iAuth
                 return response()->json(['status' => False, 'msg' => $validator->messages()]);
             }
             $refUserName = TblUserMstr::where('user_name', $req->userName)
-                                        ->where('status', 1)
+                ->where('status', 1)
                 ->first();
             // If the Username is existing
             if ($refUserName) {
@@ -59,18 +60,18 @@ class AuthRepository implements iAuth
                 if ($passStmt == true) {
                     $token = $refUserName->createToken('my-app-token')->plainTextToken;
                     $refUserName->remember_token = $token;
-                    
 
-                    if($refUserName->id > 0)
-                    {
-                        
-                        $getdefault = UserWardPermission::select('ulb_id')
-                                                        ->where('user_id', $refUserName->id)
-                                                        ->groupby('ulb_id')
-                                                        ->orderBy('id', 'asc')
-                                                        ->first();
-                        
-                        if($getdefault->ulb_id > 0)
+
+                    if ($refUserName->id > 0) {
+                        # the code is edited by sam
+                        # date : 05/11/2022
+                        $getdefault = UserWardPermission::select('ulb_id','tbl_ulb_list.ulb_name')
+                            ->join('tbl_ulb_list','tbl_ulb_list.id','=','tbl_user_ward.ulb_id')
+                            ->where('user_id', $refUserName->id)
+                            ->groupby('ulb_id','ulb_name')
+                            ->first();
+                        # the end of the edited code by sam
+                        if ($getdefault->ulb_id > 0)
                             $refUserName->current_ulb = $getdefault->ulb_id; // Use for set db conncetion dynamic 
                         $refUserName->save();
 
@@ -84,7 +85,9 @@ class AuthRepository implements iAuth
 
                     // $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id];
                     //changed by talib
-                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id,'userTypeId' => $refUserName->user_type_id];
+                    # edited code by sam
+                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id, 'userTypeId' => $refUserName->user_type_id,'ulbId'=>$getdefault->ulb_id,'ulbName'=>$getdefault->ulb_name];
+                    # end of edited code
                     //changed by talib
                     return response($response, 200);
                 }
@@ -129,7 +132,7 @@ class AuthRepository implements iAuth
                 return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
             }
         } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
 
@@ -189,7 +192,10 @@ class AuthRepository implements iAuth
 
     public function CreateUser(Request $req)
     {
-
+        # edited code by sam
+        $userId = Auth::user()->id;
+        $ulbId = $this->GetUlbId($userId);
+        # ended 
 
         try {
             $validator = Validator::make($req->all(), [
@@ -211,6 +217,7 @@ class AuthRepository implements iAuth
             $userDtl->name = $req->name;
             $userDtl->contactno = $req->contactNo;
             $userDtl->address = $req->address;
+            $userDtl->ulb_id = $ulbId;
             $userDtl->save();
 
             if ($userDtl->id) {
@@ -246,29 +253,32 @@ class AuthRepository implements iAuth
                     $user->photo_path = $filePath;
                     $user->save();
 
-
-                    if (isset($req->wards) && isset($req->ulbId)) {
+                    # edited by sam
+                    // if (isset($req->wards) && isset($req->ulbId)) {
+                    if (isset($req->wards) && isset($ulbId)) {      //<--------here
                         $wardarray = explode(',', $req->wards);
                         foreach ($wardarray as $key => $value) {
                             $permission  = new UserWardPermission();
                             $permission->user_det_id = $userDtl->id;
                             $permission->user_id = $user->id;
-                            $permission->ulb_id = $req->ulbId;
+                            // $permission->ulb_id = $req->ulbId;
+                            $permission->ulb_id = $ulbId;           //<------------here
                             $permission->ward_id = $value;
                             $permission->save();
                         }
                     }
 
-                    if (isset($req->ulbs) && !isset($req->wards)) {
-                        foreach ($req->ulbs as $ulb) {
+                    if (isset($ulbId) && !isset($req->wards)) {     //<---------here
+                        //foreach ($ulbId as $ulb) 
+                        {          //<-----here
                             $permission  = new UserWardPermission();
                             $permission->user_det_id = $userDtl->id;
                             $permission->user_id = $user->id;
-                            $permission->ulb_id = $ulb;
+                            $permission->ulb_id = $ulbId;           //<----------here
                             $permission->save();
                         }
                     }
-
+                    # ended 
                     return response()->json(['status' => True, 'data' => '', 'msg' => 'User created successfully. user name:' . $username . ' and temporary password:12345'], 200);
                 }
             } else {
@@ -281,7 +291,10 @@ class AuthRepository implements iAuth
 
     public function UpdateUser(Request $req)
     {
-
+        # edited code by sam
+        $ulbuserId = Auth::user()->id;
+        $ulbId = $this->GetUlbId($ulbuserId);
+        # ended 
 
         try {
             $validator = Validator::make($req->all(), [
@@ -326,17 +339,20 @@ class AuthRepository implements iAuth
 
                 if ($user->id) {
 
-                    if (isset($req->wards) && isset($req->ulbId)) {
+                    // if (isset($req->wards) && isset($req->ulbId)) {
+                    if (isset($req->wards) && isset($ulbId)) {  //<-------here
                         $wardarray = explode(',', $req->wards);
                         UserWardPermission::where('user_id', $req->userId)
-                            ->where('ulb_id', $req->ulbId)
+                            // ->where('ulb_id', $req->ulbId)
+                            ->where('ulb_id', $ulbId)  //<-----------here
                             ->whereNotNull('ward_id')
                             ->update(['stts' => 0]);
 
                         foreach ($wardarray as $key => $value) {
 
                             $permission = UserWardPermission::where('user_id', $req->userId)
-                                ->where('ulb_id', $req->ulbId)
+                                // ->where('ulb_id', $req->ulbId)
+                                ->where('ulb_id', $ulbId)  //<--------here
                                 ->where('ward_id', $value)
                                 ->first();
 
@@ -348,15 +364,16 @@ class AuthRepository implements iAuth
                                 $perm  = new UserWardPermission();
                                 $perm->user_det_id = $userDtl->id;
                                 $perm->user_id = $user->id;
-                                $perm->ulb_id = $req->ulbId;
+                                // $perm->ulb_id = $req->ulbId;
+                                $perm->ulb_id = $ulbId;    //<--------here
                                 $perm->ward_id = $value;
                                 $perm->save();
                             }
                         }
                     }
 
-                    if (isset($req->ulbs) && !isset($req->wards)) {
-                        $ulbarray = explode(',', $req->ulbs);
+                    if (isset($ulbId) && !isset($req->wards)) { //<-------here
+                        $ulbarray = explode(',', $ulbId);   //<-----------here
                         UserWardPermission::where('user_id', $req->userId)
                             ->whereNull('ward_id')
                             ->update(['stts' => 0]);
@@ -394,16 +411,19 @@ class AuthRepository implements iAuth
 
     public function getAllUser(Request $req)
     {
+        # edited code by sam
+        $ulbId = $this->GetUlbId($req->user()->id);
+        # ended
         try {
             $response = array();
 
-            $allUser = DB::table('view_user_mstr');
+            $allUser = DB::table('view_user_mstr')->where('ulb_id', $ulbId);
 
             if ($req->userId) {
                 $allUser = $allUser->where('id', $req->userId);
             }
             $allUser = $allUser->orderBy('id', 'desc')
-                                ->get();
+                ->get();
 
             foreach ($allUser as $user) {
                 $val['userId'] = $user->id;
@@ -416,7 +436,9 @@ class AuthRepository implements iAuth
                 $val['lastVisitedDate'] = date('d-m-Y', $user->login_date);
                 $val['lastIpAddress'] = $user->ip_address;
                 $val['status'] = ($user->status == 1) ? 'Active' : 'Deactive';
-                $val['ulbDetails'] = ($req->userId)?$this->GetUlbsWithWard($req->userId, $this->Ward):$this->GetUlbs($user->id);
+                # edited code by sam
+                $val['ulbDetails'] = ($req->userId) ? $this->GetUlbsWithWard($req->userId, $this->Ward) : $this->GetUlbs($user->id);
+                # ended
                 //changed by talib
                 $val['userTypeId'] = $user->user_type_id;
                 $val['loginUserName'] = $user->user_name;
@@ -431,7 +453,7 @@ class AuthRepository implements iAuth
         }
     }
 
-    
+
 
     public function makeUserActiveDeactive(Request $req)
     {
@@ -453,11 +475,13 @@ class AuthRepository implements iAuth
 
     public function getUserFormDate(Request $request)
     {
-
+        # code updated by sam
+        $ulbId = $this->GetUlbId($request->user()->id);
+        # ended
         try {
 
             $responseData = array();
-            $responseData['wardList'] = $this->Ward->get();
+            $responseData['wardList'] = $this->Ward->where('ulb_id', $ulbId)->orderBy('sqorder', 'asc')->get();
             $responseData['ulbList'] = Ulb::get();
             $responseData['userType'] = UserType::get();
 
@@ -480,7 +504,7 @@ class AuthRepository implements iAuth
 
             $sql = "SELECT distinct name,uw.user_id,contactno,address FROM view_user_mstr um
             left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
-            where user_type='Tax Collector' " . $whereparam;
+            where user_type='Tax Collector' " . $whereparam. " order by name asc";
             $allUser = DB::select($sql);
 
 
@@ -504,17 +528,193 @@ class AuthRepository implements iAuth
 
             if (isset($req->ulbId)) {
                 $user = TblUserMstr::where('remember_token', $req->bearerToken())->first();
-                if($user)
-                {
+                $response = array();
+                if ($user) {
                     $user->current_ulb = $req->ulbId;
                     $user->save();
-                    return response()->json(['status' => True, 'data' => '', 'msg' => 'Ulb switched successfully'], 200);
-                }else{
+                    $ulbData = Ulb::where('id', $req->ulbId)->first();
+                    $response['id'] = $ulbData->id;
+                    $response['ulbName'] = $ulbData->ulb_name;
+                    return response()->json(['status' => True, 'data' => $response, 'msg' => 'Ulb switched successfully'], 200);
+                } else {
                     return response()->json(['status' => False, 'data' => '', 'msg' => 'User Not found for switching'], 200);
                 }
             }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+        }
+    }
 
+    public function MenuPermission(Request $req)
+    {
+
+        try {
+            $validator = Validator::make($req->all(), [
+                'menuName' => 'required|MIN:5',
+                'menuPath' => 'required',
+                'underMenu' => 'required|int',
+                'menuOrder' => 'required|int',
+                'permissionTo' => 'required|array',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['status' => False, 'msg' => $validator->messages()]);
+            }
+
+            $userId = $req->user()->id;
+            $menu = new MenuMaster();
+            $menu->menu_name = $req->menuName;
+            $menu->file_path = $req->menuPath;
+            $menu->under_menu_id = $req->underMenu;
+            $menu->menu_order = $req->menuOrder;
+            $menu->user_id = $userId;
+            $menu->save();
+
+            if ($menu->id) {
+                foreach($req->permissionTo as $userType)
+                {
+                    $permission = new MenuPermission();
+
+                    $permission->menu_id = $menu->id;
+                    $permission->user_type_id = $userType;
+                    $permission->user_id = $userId;
+                    $permission->status = 1;
+                    $permission->save();
+                }
+
+                return response()->json(['status' => True, 'data' => '', 'msg' => 'Menu created and permission granted'], 200);
+            } else {
+                return response()->json(['status' => True, 'data' => '', 'msg' => 'Menu created but permission not granted due to technical issue'], 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+        }
+    }
+
+    public function MenuPermissionList(Request $request)
+    {
+
+        try {
+            $responseData = array();
+            $whereParam = "";
+            if(isset($request->menuId))
+                $whereParam = "WHERE m.id=".$request->menuId;
             
+
+            $sql = "SELECT m.id,m.menu_name,m.file_path,m1.menu_name as parent_menu,m.menu_order,GROUP_CONCAT(user_type SEPARATOR ', ') as user_type, GROUP_CONCAT(short_name SEPARATOR ', ') as short_name FROM tbl_menu_mtr m
+                LEFT JOIN tbl_menu_mtr m1 on m.under_menu_id=m1.id
+                JOIN (SELECT user_type,short_name,menu_id FROM tbl_menu_permission p
+                    JOIN tbl_user_type ut on p.user_type_id = ut.id
+                    WHERE status=1) p on p.menu_id=m.id ". $whereParam ."
+                GROUP BY m.id,m.menu_name,m.file_path,m1.menu_name,m.menu_order
+                ORDER BY m.menu_order ASC";
+            
+            $menuList = DB::select($sql);
+
+            foreach ($menuList as $menu) {
+                $val['id'] = $menu->id;
+                $val['MenuName'] = $menu->menu_name;
+                $val['menuPath'] = $menu->file_path;
+                $val['underMenu'] = $menu->parent_menu;
+                $val['menuOrder'] = $menu->menu_order;
+                $val['permissionTo'] = $menu->user_type;
+                $responseData[] = $val;
+            }
+
+            return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+        }
+    }
+
+    public function UpdateMenuPermission(Request $req)
+    {
+
+        try {
+            $validator = Validator::make($req->all(), [
+                'menuId' => 'required',
+                'menuName' => 'required|MIN:5',
+                'menuPath' => 'required',
+                'underMenu' => 'required|int',
+                'menuOrder' => 'required|int',
+                'permissionTo' => 'array',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['status' => False, 'msg' => $validator->messages()]);
+            }
+
+            $userId = $req->user()->id;
+            $menu = MenuMaster::find($req->menuId);
+            $menu->menu_name = $req->menuName;
+            $menu->file_path = $req->menuPath;
+            $menu->under_menu_id = $req->underMenu;
+            $menu->menu_order = $req->menuOrder;
+            $menu->user_id = $userId;
+            $menu->save();
+
+            if ($req->menuId && $req->permissionTo) {
+                MenuPermission::where('menu_id', $req->menuId)
+                                ->where('status', 1)
+                                ->update(['status' => 0]);
+                foreach($req->permissionTo as $userType)
+                {
+                    $permission = new MenuPermission();
+
+                    $permission->menu_id = $menu->id;
+                    $permission->user_type_id = $userType;
+                    $permission->user_id = $userId;
+                    $permission->status = 1;
+                    $permission->save();
+                }
+
+                return response()->json(['status' => True, 'data' => '', 'msg' => 'Menu updated and permission granted'], 200);
+            } else {
+                return response()->json(['status' => True, 'data' => '', 'msg' => 'Menu updated successfully'], 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+        }
+    }
+
+    public function MenuPermissionByUserType(Request $request)
+    {
+
+        try {
+            $responseData = array();
+
+            if(isset($request->userType))
+            {
+                $sql = "SELECT m.id,m.menu_name,m.file_path,m.menu_order FROM tbl_menu_mtr m
+                    JOIN tbl_menu_permission p on p.menu_id=m.id 
+                    WHERE p.status=1 and (m.under_menu_id is null or m.under_menu_id = 0) AND p.user_type_id=". $request->userType ."
+                    ORDER BY m.menu_order ASC";
+                
+                $menuList = DB::select($sql);
+
+                foreach ($menuList as $menu) {
+
+                    $childMenus = MenuMaster::where('under_menu_id', $menu->id)
+                                            ->orderBy('menu_order', 'ASC')
+                                            ->get();
+                    $responseChild = array();
+                    foreach($childMenus as $childMenu)
+                    {
+                        $val['id'] = $childMenu->id;
+                        $val['MenuName'] = $childMenu->menu_name;
+                        $val['menuPath'] = $childMenu->file_path;
+                        $val['menuOrder'] = $childMenu->menu_order;
+                        $responseChild[] = $val;
+                    }
+
+                    $val['id'] = $menu->id;
+                    $val['MenuName'] = $menu->menu_name;
+                    $val['menuPath'] = $menu->file_path;
+                    $val['underMenu'] = $responseChild;
+                    $val['menuOrder'] = $menu->menu_order;
+                    $responseData[] = $val;
+                }
+
+                return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
+            }
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }

@@ -21,3 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return phpinfo();
 });
+
+// Route::get('exceltodatabase', function () {
+//     return view('exceltodatabase');
+// });
