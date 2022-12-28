@@ -153,6 +153,9 @@ class ConsumerRepository implements iConsumerRepository
                     $monthlyDemand = 0;
                     $demand_form = '';
                     $i = 0;
+                    
+                    $trans = $this->Transaction->where('consumer_id', $consumer->id)->count('*');
+                    
                     foreach ($demand as $dmd) {
                         if ($i == 0)
                             $demand_form = date('d-m-Y', strtotime($dmd->payment_from));
@@ -184,7 +187,7 @@ class ConsumerRepository implements iConsumerRepository
                     $con['applyBy'] = ($consumer->user_id) ? $this->GetUserDetails($consumer->user_id)->name : '';
                     $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
                     $con['status'] = ($consumer->is_deactivate == 0) ? 'Active' : 'Deactive';
-
+                    $con['editApplicable'] = ($trans == 0)?true:false;
                     $conArr[] = $con;
                 }
                 return response()->json(['status' => True, 'data' => $conArr, 'msg' => ''], 200);
@@ -279,6 +282,7 @@ class ConsumerRepository implements iConsumerRepository
                     $monthlyDemand = 0;
                     $demand_form = '';
                     $i = 0;
+                    $trans = $this->Transaction->where('apartment_id', $apartment->id)->count('*');
                     foreach ($demand as $dmd) {
                         if ($i == 0)
                             $demand_form = date('d-m-Y', strtotime($dmd->payment_from));
@@ -311,7 +315,7 @@ class ConsumerRepository implements iConsumerRepository
                     $con['paidStatus'] = $paid_status;
                     $con['applyBy'] = ($apartment->user_id) ? $this->GetUserDetails($apartment->user_id)->name : '';
                     $con['applyDate'] = ($apartment->entry_date) ? date("d-m-Y", strtotime($apartment->entry_date)) : '';
-
+                    $con['editApplicable'] = ($trans == 0)?true:false;
 
                     $conArr[] = $con;
                 }
@@ -362,6 +366,7 @@ class ConsumerRepository implements iConsumerRepository
             $consumer->pincode = $request->pinCode;
             $consumer->consumer_category_id = $request->consumerCategory;
             $consumer->consumer_type_id = $request->consumerType;
+            $consumer->license_no = $request->licenseNo;
             $consumer->user_id = $userId;
             $consumer->entry_date = date('Y-m-d');
             $consumer->stampdate = date('Y-m-d H:i:s');
@@ -904,6 +909,7 @@ class ConsumerRepository implements iConsumerRepository
                 $consumer->owner_id = $request->consumerId;
                 $consumer->address = $request->address;
                 $consumer->firm_name = $request->firmName;
+                $consumer->license_no = $request->licenseNo;
                 $consumer->pincode = $request->pinCode;
                 $consumer->consumer_category_id = $request->consumerCategory;
                 $consumer->consumer_type_id = $request->consumerType;
@@ -942,6 +948,7 @@ class ConsumerRepository implements iConsumerRepository
                 $response['address'] = $request->address;
                 $response['firmName'] = $request->firmName;
                 $response['pinCode'] = $request->pinCode;
+                $response['licenseNo'] = $request->licenseNo;
                 $response['consumerCategory'] = $this->ConsumerCategory->select('name')->first()->name;
                 $response['consumerType'] = $consumerType->name;
                 $response['demandFrom'] = $request->demandFrom;
@@ -1065,6 +1072,7 @@ class ConsumerRepository implements iConsumerRepository
                         $response['previousPaidAmount'] = ($lastpayment) ? $lastpayment->total_payable_amt : "0.00";
                         $response['tcName'] = $getTc->name;
                         $response['tcMobile'] = $getTc->contactno;
+                        $response = array_merge($response, $this->GetUlbData($ulbId));
                         return response()->json(['status' => True, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
                     }
                 }
@@ -1318,6 +1326,8 @@ class ConsumerRepository implements iConsumerRepository
                 $consumerLog->previous_mobile_no = $consumer->mobile_no;
                 $consumerLog->previous_address = $consumer->address;
                 $consumerLog->address = $consumer->address;
+                $consumerLog->previous_license_no = $consumer->license_no;
+                $consumerLog->license_no = $consumer->license_no;
                 $consumerLog->previous_consumer_category_id = $consumer->consumer_category_id;
                 $consumerLog->consumer_category_id = $consumer->consumer_category_id;
                 $consumerLog->consumer_type_id = $consumer->consumer_type_id;
@@ -1569,6 +1579,7 @@ class ConsumerRepository implements iConsumerRepository
                             $response['tcName'] = $getTc->name;
                             $response['tcMobile'] = $getTc->contactno;
                         }
+                        $response = array_merge($response, $this->GetUlbData($ulbId));
                         return response()->json(['status' => True, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
                     }
                 }
@@ -2131,7 +2142,7 @@ class ConsumerRepository implements iConsumerRepository
 
                 $sql = "SELECT t.transaction_no,t.transaction_date,c.ward_no,c.name,c.address,a.apt_name, a.apt_code, c.consumer_no, a.apt_address, a.ward_no as apt_ward, 
                 t.total_payable_amt, cl.payment_from, cl.payment_to, t.payment_mode,td.bank_name, td.branch_name, td.cheque_dd_no, td.cheque_dd_date, 
-                t.total_demand_amt, t.total_remaining_amt, t.stampdate, t.apartment_id, ct.rate,cc.name as consumer_category,t.user_id, c.holding_no,c.mobile_no,ct.name as consumer_type
+                t.total_demand_amt, t.total_remaining_amt, t.stampdate, t.apartment_id, ct.rate,cc.name as consumer_category,t.user_id, c.holding_no,c.mobile_no,ct.name as consumer_type,c.license_no
                 FROM swm_transactions t
                 LEFT JOIN swm_consumers c on t.consumer_id=c.id
                 LEFT JOIN swm_consumer_types ct on c.consumer_type_id=ct.id
@@ -2170,6 +2181,7 @@ class ConsumerRepository implements iConsumerRepository
                     $response['mobileNo'] = $transaction->mobile_no;
                     $response['consumerCategory'] = ($transaction->consumer_category) ? $transaction->consumer_category : 'RESIDENTIAL';
                     $response['consumerType'] = $transaction->consumer_type;
+                    $response['licenseNo'] = isset($transaction->license_no) ? $transaction->license_no : '';
                     $response['apartmentName'] = $transaction->apt_name;
                     $response['apartmentCode'] = $transaction->apt_code;
                     $response['ReceiptWard'] = ($transaction->apt_ward) ? $transaction->apt_ward : $transaction->ward_no;
@@ -2191,7 +2203,7 @@ class ConsumerRepository implements iConsumerRepository
                     $response['tcMobile'] = $getTc->contactno;
                 }
             }
-
+            $response = array_merge($response, $this->GetUlbData($ulbId));
 
             return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
         } catch (Exception $e) {
@@ -2206,15 +2218,16 @@ class ConsumerRepository implements iConsumerRepository
         try {
             $userId = $request->user()->id;
             $ulbId = $this->GetUlbId($userId);
+            $ulbData = $this->GetUlbData($ulbId);
             $response = array();
             $receipt_no = "";
             if ((isset($request->consumerId) || isset($request->apartmentId))) {
 
                 if (isset($request->consumerId))
-                    $sql="SELECT d.consumer_id,c.name,c.consumer_no,c.ward_no,c.address,ct.rate,min(d.payment_from) as demand_from, max(d.payment_to) as demand_upto,sum(d.total_tax) as total_tax,c.mobile_no,ct.name as consumer_type,c.holding_no FROM swm_consumers c
+                    $sql="SELECT d.consumer_id,c.name,c.consumer_no,c.ward_no,c.address,ct.rate,min(d.payment_from) as demand_from, max(d.payment_to) as demand_upto,sum(d.total_tax) as total_tax,c.mobile_no,ct.name as consumer_type,c.holding_no,c.license_no FROM swm_consumers c
                     LEFT JOIN (select * from swm_demands where paid_status=0 and is_deactivate=0) d on d.consumer_id=c.id
                     JOIN swm_consumer_types ct on c.consumer_type_id=ct.id
-                    WHERE c.id=" . $request->consumerId . " and c.ulb_id=".$ulbId." group by c.name,c.consumer_no,c.ward_no,c.address,ct.rate,d.consumer_id,c.consumer_category_id,c.mobile_no,ct.name,c.holding_no";
+                    WHERE c.id=" . $request->consumerId . " and c.ulb_id=".$ulbId." group by c.name,c.consumer_no,c.ward_no,c.address,ct.rate,d.consumer_id,c.consumer_category_id,c.mobile_no,ct.name,c.holding_no,c.license_no";
                 else
                     $sql = "WITH apartment as (
                         SELECT a.apt_code,a.apt_name,a.address,a.ward_no,min(d.payment_from) as demand_from,max(d.payment_to) as demand_upto,sum(d.total_tax) as total_tax,r.rate,r.no_of_flats FROM swm_demands d
@@ -2242,7 +2255,7 @@ class ConsumerRepository implements iConsumerRepository
 
                     // For demand receipt log
                     $demandLog = $this->DemandLog;
-                    $demandLog->amount = $demand->total_tax;
+                    $demandLog->amount = $demand->total_tax??0;
                     if (isset($request->consumerId))
                         $demandLog->consumer_id = $request->consumerId;
                     else
@@ -2255,7 +2268,7 @@ class ConsumerRepository implements iConsumerRepository
 
                     if($demandLog->id>0)
                     {
-                        $receipt_no = 'RMC/SWM/'.str_pad($demandLog->id, 5, "0", STR_PAD_LEFT);
+                        $receipt_no = $ulbData['shortName'].'/'.'SWM/'.str_pad($demandLog->id, 5, "0", STR_PAD_LEFT);
                         $demandLog->receipt_no = $receipt_no;
                         $demandLog->save();
                     }
@@ -2271,6 +2284,7 @@ class ConsumerRepository implements iConsumerRepository
                     $response['consumerType'] = isset($demand->consumer_type) ? $demand->consumer_type : '';
                     $response['apartmentName'] = isset($demand->apt_name) ? $demand->apt_name : '';
                     $response['apartmentCode'] = isset($demand->apt_code) ? $demand->apt_code : '';
+                    $response['licenseNo'] = isset($demand->license_no) ? $demand->license_no : '';
                     $response['address'] = $demand->address;
                     $response['wardNo'] = $demand->ward_no;
                     $response['demandNo'] = $receipt_no;
@@ -2284,13 +2298,14 @@ class ConsumerRepository implements iConsumerRepository
                     $response['tcMobile'] = $getTc->contactno;
                 }
             }
-
+            $response = array_merge($response, $ulbData);
 
             return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }
     }
+
 
 
 

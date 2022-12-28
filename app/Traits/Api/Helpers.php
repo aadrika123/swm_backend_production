@@ -241,4 +241,26 @@ trait Helpers
             return  $default; // for default for ranchi;
         }
     }
+
+    public function GetUlbData($ulbId)
+    {
+        if (isset($ulbId)) {
+            $ulb = Ulb::where('id', $ulbId)->first();
+            $ulbData = array();
+            if ($ulb) {
+                $ulbData['ulbName'] = $ulb->ulb_name;
+                $ulbData['ulb'] = $ulb->ulb;
+                $ulbData['shortName'] = $ulb->short_name;
+                $ulbData['contactNo'] = $ulb->contact_no;
+                $ulbData['gstNo'] = $ulb->gst_no;
+                $ulbData['panNo'] = $ulb->pan_no;
+                $ulbData['bankName'] = $ulb->bank_name;
+                $ulbData['accountName'] = $ulb->account_name;
+                $ulbData['accountNo'] = $ulb->account_no;
+                $ulbData['ifscNo'] = $ulb->ifsc_no;
+                $ulbData['logo'] = "uploads/logo/".$ulb->logo;
+            }
+            return $ulbData;
+        }
+    }
 }

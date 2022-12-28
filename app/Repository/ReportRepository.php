@@ -110,53 +110,36 @@ class ReportRepository implements iReportRepository
         $From = Carbon::create($From)->format('Y-m-d');
         $Upto = Carbon::create($Upto)->format('Y-m-d');
 
-        
-
-        // $allTrans = $this->Transaction->select('swm_transactions.*', 'swm_consumers.ward_no', 'consumer_no', 'name', 'a.apt_code', 'a.apt_name')
-        //     ->leftjoin('swm_consumers', 'swm_transactions.consumer_id', '=', 'swm_consumers.id')
-        //     ->leftjoin('swm_apartments as a', 'swm_transactions.apartment_id', '=', 'a.id')
-        //     ->leftjoin('swm_transaction_deactivates as td', 'td.transaction_id', '=', 'swm_transactions.id')
-        //     ->whereBetween('transaction_date', [$From, $Upto])
-        //     ->where('swm_transactions.ulb_id', $ulbId)
-        //     ->whereNotIn('swm_transactions.paid_status', [0,3])
-        //     ->whereNull('td.id');
+        $allTrans = $this->Transaction->select('swm_transactions.*', 'swm_consumers.ward_no', 'consumer_no', 'name', 'a.apt_code', 'a.apt_name')
+            ->leftjoin('swm_consumers', 'swm_transactions.consumer_id', '=', 'swm_consumers.id')
+            ->leftjoin('swm_apartments as a', 'swm_transactions.apartment_id', '=', 'a.id')
+            ->leftjoin('swm_transaction_deactivates as td', 'td.transaction_id', '=', 'swm_transactions.id')
+            ->whereBetween('transaction_date', [$From, $Upto])
+            ->where('swm_transactions.ulb_id', $ulbId)
+            ->whereNotIn('swm_transactions.paid_status', [0,3])
+            ->whereNull('td.id');
 
         //changed by talib
         if (isset($tcId))
-            $whereParam = " and t.user_id=".$tcId;
-            //$allTrans = $allTrans->where('swm_transactions.user_id', $tcId);
-            
+            $allTrans = $allTrans->where('swm_transactions.user_id', $tcId);
         //changed by talib   
         if (isset($wardNo))
-            $whereParam += " and (c.ward_no='".$wardNo."' or a.ward_no='".$wardNo."')";
-            //$allTrans = $allTrans->where('swm_consumers.ward_no', $wardNo);
-            
+            $allTrans = $allTrans->where('swm_consumers.ward_no', $wardNo);
 
         if (isset($consumerCategory))
-            $whereParam += " and c.consumer_category_id='".$consumerCategory."'";
-            //$allTrans = $allTrans->where('swm_consumers.consumer_category_id', $consumerCategory);
+            $allTrans = $allTrans->where('swm_consumers.consumer_category_id', $consumerCategory);
 
         if (isset($consumertype))
-            $whereParam += " and c.consumer_type_id='".$consumertype."'";
-            //$allTrans = $allTrans->where('swm_consumers.consumer_type_id', $consumertype);
+            $allTrans = $allTrans->where('swm_consumers.consumer_type_id', $consumertype);
 
         if (isset($apartmentId))
-            $whereParam += " and a.id='".$apartmentId."'";
-            //$allTrans = $allTrans->where('swm_consumers.apartment_id', $apartmentId);
+            $allTrans = $allTrans->where('swm_consumers.apartment_id', $apartmentId);
 
         if (isset($mode))
-            $whereParam += " and t.payment_mode='".$mode."'";
-            //$allTrans = $allTrans->where('swm_transactions.payment_mode', $mode);
+            $allTrans = $allTrans->where('swm_transactions.payment_mode', $mode);
 
-        //$allTrans = $allTrans->orderBy('transaction_date', 'DESC')->get();
-        
-        $sql = "SELECT t.*,c.ward_no,consumer_no,name,a.apt_code,a.apt_name from swm_transactions t
-        left join swm_consumers c on t.consumer_id=c.id
-        left join swm_apartments as a on t.apartment_id=a.id
-        left join swm_transaction_deactivates as td on td.transaction_id=t.id
-        where (transaction_date between '".$From."' and '".$Upto."') and t.ulb_id=".$ulbId." and t.paid_status not in(0,3) and td.id is null order by transaction_date desc";
-        
-        $allTrans = DB::connection($this->dbConn)->select($sql);
+        $allTrans = $allTrans->orderBy('transaction_date', 'DESC')->get();
+
         $totCollection = 0;
         $totDemand = 0;
         $totPending = 0;
