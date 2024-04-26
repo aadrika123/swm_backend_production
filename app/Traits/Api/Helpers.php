@@ -152,7 +152,7 @@ trait Helpers
         if (isset($user_id)) {
             $sql = "SELECT ward_id FROM tbl_user_ward w
             JOIN tbl_ulb_list u on w.ulb_id=u.id
-            WHERE user_id=" . $user_id . " and ulb_id=" . $ulb_id . " and w.stts=1 group by ward_id order by ward_id Asc";
+            WHERE user_id=" . $user_id . " and ulb_id=" . $ulb_id . " and w.stts=1 group by ward_id";
 
             $ulbs = DB::select($sql);
             $wardarr = array();
