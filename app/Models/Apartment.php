@@ -18,4 +18,9 @@ class Apartment extends Model
         $this->connection = $data;
         //$this->connection = 'db_ranchi';
     }
+
+    public function getApartment()
+    {
+        
+    }
 }

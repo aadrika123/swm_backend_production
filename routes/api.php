@@ -17,41 +17,33 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::controller(AuthController::class)->group(function () {
-    Route::post('login', 'login');                              // Route for user Login
-    Route::get('getHomePageData/{userId}', 'GetHomePageData');  // Route for get last Login Details
-    Route::post('postChangePassword', 'ChangePassword');        // Route for Change Password
-    Route::post('logOut', 'Logout');                            // Route for user Logout
-    // Route::post('createUser', 'CreateUser');                    // Route for create user
 
-    // Route::post('getAlluser', 'getAllUser');                    // Route for get all user
-    Route::post('userActiveDeactive', 'userActiveDeactive');    // Route for user activate and deactivate
-    // Route::post('getUserFormDate', 'getUserFormDate');          // Route for user form data
-    Route::post('getTcList', 'getTcList');                      // Route for get tc list ulb wise
-    Route::post('ulbSwitch', 'ulbSwitch');                      // Route for ulb switching
 
-});
-
-Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function () {
+Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
     // Your Protected Route is Here
     // Route::get('test', function () {
     //     return 'Success';
     // });
     Route::controller(AuthController::class)->group(function () {
-        Route::post('updateUser', 'UpdateUser');                    // Route for update user
-        
+        Route::get('swm/getHomePageData/{userId}', 'GetHomePageData');  // Route for get last Login Details
+    
+    });
+
+    Route::controller(AuthController::class)->group(function () {
+        //Route::post('swm/updateUser', 'UpdateUser');                    // Route for update user
+        Route::post('swm/getTcList', 'getTcList');                      // Route for get tc list ulb wise
         // Menu Permission
-        Route::post('postMenuPermission', 'MenuPermission');            
-        Route::get('getMenuPermissionList', 'MenuPermissionList');
-        Route::post('getMenuPermissionById', 'MenuPermissionList');
-        Route::post('updateMenuPermission', 'UpdateMenuPermission');
-        Route::post('getMenuPermissionByUserType', 'MenuPermissionByUserType');
+        Route::post('swm/postMenuPermission', 'MenuPermission');            
+        Route::get('swm/getMenuPermissionList', 'MenuPermissionList');
+        Route::post('swm/getMenuPermissionById', 'MenuPermissionList');
+        Route::post('swm/updateMenuPermission', 'UpdateMenuPermission');
+        Route::post('swm/getMenuPermissionByUserType', 'MenuPermissionByUserType');
 
         // route for the users
         # edited by sam
-        Route::post('getAlluser', 'getAllUser');                    // Route for get all user
-        Route::post('createUser', 'CreateUser');                    // Route for create user
-        Route::post('getUserFormDate', 'getUserFormDate');          // Route for user form data
+        Route::post('swm/getAlluser', 'getAllUser');                    // Route for get all user
+        //Route::post('swm/createUser', 'CreateUser');                    // Route for create user
+        Route::post('swm/getUserFormDate', 'getUserFormDate');          // Route for user form data
         # ended here                  
     });
 
@@ -59,109 +51,112 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
 
 
     Route::controller(ConsumerController::class)->group(function () {
-        Route::get('getConsumerList', 'GetConsumerList', function () {
+        Route::get('swm/getConsumerList', 'GetConsumerList', function () {
             return 'Success';
         });
-        Route::get('getConsumerDetailsById/{id}', 'GetConsumerList');
-        Route::get('getApartmentList', 'GetApartmentList');
-        Route::get('getApartmentDetailsById/{id}', 'GetApartmentDetailsById');
-        Route::post('postConsumerAdd', 'postConsumerAdd');
-        Route::get('getRenterFormData/{consumerId}', 'GetRenterFormData');
-        Route::get('getEditConsumerDetailsbyId/{id}', 'getEditConsumerDetailsById');
-        Route::post('postDeactivateConsumer', 'postDeactivateConsumer');
-        Route::post('getPaymentData', 'getPaymentData');
-        Route::post('postPayment', 'MakePayment');
-        Route::post('getCalculatedAmount', 'getCalculatedAmount');
-        Route::post('getDashboardData', 'getDashboardData');
-        Route::get('searchTransaction/{transactionNo}', 'searchTransaction');
-        Route::post('transactionDeactivate', 'transactionDeactivate');
-        Route::post('postRenterForn', 'RenterForm');
+        Route::get('swm/getConsumerDetailsById/{id}', 'GetConsumerList');
+        Route::get('swm/getApartmentList', 'GetApartmentList');
+        Route::get('swm/getApartmentDetailsById/{id}', 'GetApartmentDetailsById');
+        Route::post('swm/postConsumerAdd', 'postConsumerAdd');
+        Route::get('swm/getRenterFormData/{consumerId}', 'GetRenterFormData');
+        Route::get('swm/getEditConsumerDetailsbyId/{id}', 'getEditConsumerDetailsById');
+        Route::post('swm/postDeactivateConsumer', 'postDeactivateConsumer');
+        Route::post('swm/getPaymentData', 'getPaymentData');
+        Route::post('swm/postPayment', 'MakePayment');
+        Route::post('swm/getCalculatedAmount', 'getCalculatedAmount');
+        Route::post('swm/getDashboardData', 'getDashboardData');
+        Route::post('swm/getAnalyticDashboardData', 'getAnalyticDashboardData');
+        Route::get('swm/searchTransaction/{transactionNo}', 'searchTransaction');
+        Route::post('swm/transactionDeactivate', 'transactionDeactivate');
+        Route::post('swm/postRenterForn', 'RenterForm');
         
         // Geo Tagging
-        Route::post('postGeoTagging', 'AddGeoTagging');
-        Route::post('getGeoLocation', 'GetGeoLocation');
+        Route::post('swm/postGeoTagging', 'AddGeoTagging');
+        Route::post('swm/getGeoLocation', 'GetGeoLocation');
         
-        Route::post('getAllTransaction', 'GetAllTransaction');
-        Route::post('getCollectionSummary', 'AllCollectionSummary');
-        Route::post('postEditConsumerDetail', 'UpdateConsumerDetails');
-        Route::post('transactionModeChange', 'transactionModeChange');
-        Route::post('postReminder', 'addConsumerReminder');
-        Route::post('getReminder', 'getConsumerReminder');
-        Route::post('apartmentPayment', 'ApartmentPayment');
-        Route::post('apartmentDeactivate', 'ApartmentDeactivate');
-        Route::post('getCashVerificationList', 'getCashVerificationList');
-        Route::post('getCashVerificationFullDetails', 'getCashVerificationFullDetails');
-        Route::post('postCashVerification', 'CashVerification');
+        Route::post('swm/getAllTransaction', 'GetAllTransaction');
+        Route::post('swm/getCollectionSummary', 'AllCollectionSummary');
+        Route::post('swm/postEditConsumerDetail', 'UpdateConsumerDetails');
+        Route::post('swm/transactionModeChange', 'transactionModeChange');
+        Route::post('swm/postReminder', 'addConsumerReminder');
+        Route::post('swm/getReminder', 'getConsumerReminder');
+        Route::post('swm/apartmentPayment', 'ApartmentPayment');
+        Route::post('swm/apartmentDeactivate', 'ApartmentDeactivate');
+        Route::post('swm/getCashVerificationList', 'getCashVerificationList');
+        Route::post('swm/getCashVerificationFullDetails', 'getCashVerificationFullDetails');
+        Route::post('swm/postCashVerification', 'CashVerification');
 
-        Route::post('postClearanceForm', 'ClearanceForm');                           // Route for make bank reconciliation
-        Route::post('getBankReconciliationList', 'GetBankReconciliationList');        // Route for get bank reconciliation
+        Route::post('swm/postClearanceForm', 'ClearanceForm');                           // Route for make bank reconciliation
+        Route::post('swm/getBankReconciliationList', 'GetBankReconciliationList');        // Route for get bank reconciliation
 
-        Route::post('ApartmentDetailsById', 'GetApartmentDetailsById');
-        Route::post('getConsumerListByCategory', 'ConsumerListByCategory');
-        Route::post('postPaymentDeny', 'PaymentDeny');
-        Route::post('getPaymentDenyList', 'PaymentDenyList');
+        Route::post('swm/ApartmentDetailsById', 'GetApartmentDetailsById');
+        Route::post('swm/getConsumerListByCategory', 'ConsumerListByCategory');
+        Route::post('swm/postPaymentDeny', 'PaymentDeny');
+        Route::post('swm/getPaymentDenyList', 'PaymentDenyList');
 
-        Route::post('getReprintData', 'getReprintData');
-        Route::post('getDemandReceipt', 'GetDemandReceipt');
-        Route::post('getdenialNotification', 'DenialNotificationList');
+        Route::post('swm/getReprintData', 'getReprintData');
+        Route::post('swm/getDemandReceipt', 'GetDemandReceipt');
+        Route::post('swm/getdenialNotification', 'DenialNotificationList');
 
         // Payment adjustments
-        Route::post('paymentAdjustment', 'PaymentAdjustment');
-        Route::get('getPaymentAdjustmentList', 'PaymentAdjustmentList');
+        Route::post('swm/paymentAdjustment', 'PaymentAdjustment');
+        Route::get('swm/getPaymentAdjustmentList', 'PaymentAdjustmentList');
         
 
-        Route::post('consumerListByWardNo', 'ConsumerOrApartmentList');
-        Route::post('getReminderList', 'GetReminderList');
-        Route::post('getConsumerPastTransactions', 'ConsumerPastTransactions');
+        Route::post('swm/consumerListByWardNo', 'ConsumerOrApartmentList');
+        Route::post('swm/getReminderList', 'GetReminderList');
+        Route::post('swm/getConsumerPastTransactions', 'ConsumerPastTransactions');
        
         // For Complain
-        Route::post('postTcComplain', 'TcComplain');
-        Route::post('getComplainList', 'getComplainList');
+        Route::post('swm/postTcComplain', 'TcComplain');
+        Route::post('swm/getComplainList', 'getComplainList');
         
         // For Routes
-        Route::post('postNewRoute', 'addRoute');
-        Route::post('getRouteList', 'RouteList');
-        Route::post('getRouteDataById', 'RouteDataById');
-        Route::post('updateRoute', 'updateRoute');
-        Route::post('deleteRoute', 'DeleteRoute');
+        Route::post('swm/postNewRoute', 'addRoute');
+        Route::post('swm/getRouteList', 'RouteList');
+        Route::post('swm/getRouteDataById', 'RouteDataById');
+        Route::post('swm/updateRoute', 'updateRoute');
+        Route::post('swm/deleteRoute', 'DeleteRoute');
+
+        Route::post('swm/createDefaultConsumerApartment', 'DefaultConsumerApartment');
     });
 
     Route::controller(MasterController::class)->group(function () {
-        Route::get('getConsumerAddFormData', 'GetConsumerAddFormData');
-        Route::get('getApartmentListByWardNo/{wardNo}', 'GetApartmentListData');
-        Route::get('getConsumerTypeByCategory/{id}', 'GetConsumerTypeByCategoryId');
+        Route::get('swm/getConsumerAddFormData', 'GetConsumerAddFormData');
+        Route::get('swm/getApartmentListByWardNo/{wardNo}', 'GetApartmentListData');
+        Route::get('swm/getConsumerTypeByCategory/{id}', 'GetConsumerTypeByCategoryId');
 
-        Route::post('updateApartment', 'updateApartment');
-        Route::post('addApartment', 'addApartment');
-        Route::get('getApartList', 'GetApartmentListData');
-        Route::get('getApartmentById', 'getApartmentById');
+        Route::post('swm/updateApartment', 'updateApartment');
+        Route::post('swm/addApartment', 'addApartment');
+        Route::get('swm/getApartList', 'GetApartmentListData');
+        Route::get('swm/getApartmentById', 'getApartmentById');
 
-        Route::get('getConsumerCategoryList', 'getConsumerCategoryList');
-        Route::post('postConsumerCategoryAdd', 'ConsumerCategoryAdd');
-        Route::put('postConsumerCategoryUpdate', 'ConsumerCategoryUpdate');
-        Route::post('getConsumerCategoryById', 'ConsumerCategoryById');
+        Route::get('swm/getConsumerCategoryList', 'getConsumerCategoryList');
+        Route::post('swm/postConsumerCategoryAdd', 'ConsumerCategoryAdd');
+        Route::put('swm/postConsumerCategoryUpdate', 'ConsumerCategoryUpdate');
+        Route::post('swm/getConsumerCategoryById', 'ConsumerCategoryById');
 
-        Route::post('getConsumerTypeList', 'ConsumerTypeList');
-        Route::post('postConsumerTypeAdd', 'ConsumerTypeAdd');
-        Route::put('postConsumerTypeUpdate', 'ConsumerTypeUpdate');
-        Route::post('getConsumerTypeById', 'ConsumerTypeById');
+        Route::post('swm/getConsumerTypeList', 'ConsumerTypeList');
+        Route::post('swm/postConsumerTypeAdd', 'ConsumerTypeAdd');
+        Route::put('swm/postConsumerTypeUpdate', 'ConsumerTypeUpdate');
+        Route::post('swm/getConsumerTypeById', 'ConsumerTypeById');
 
-        Route::post('getUlbList', 'UlbList');
-        Route::post('postUlbAdd', 'UlbAdd');
-        Route::put('postUlbUpdate', 'UlbUpdate');
-        Route::post('deactivateToggleUlb', 'UlbActiveDeactive');
-        Route::post('getUlbById', 'UlbById');
+        Route::post('swm/getUlbList', 'UlbList');
+        Route::post('swm/postUlbAdd', 'UlbAdd');
+        Route::put('swm/postUlbUpdate', 'UlbUpdate');
+        Route::post('swm/deactivateToggleUlb', 'UlbActiveDeactive');
+        Route::post('swm/getUlbById', 'UlbById');
 
-        Route::post('getWardList', 'WardList');
-        Route::post('postWardAdd', 'WardAdd');
-        Route::put('postWardUpdate', 'WardUpdate');
-        Route::put('getWardListById', 'WardById');
+        Route::post('swm/getWardList', 'WardList');
+        Route::post('swm/postWardAdd', 'WardAdd');
+        Route::put('swm/postWardUpdate', 'WardUpdate');
+        Route::put('swm/getWardListById', 'WardById');
     });
 
 
     Route::controller(ReportController::class)->group(function () {
-        Route::get('test', 'text');                              // Route for user Login
-        Route::post('getReportData', 'GetReportData');              // Route for get all type of report
+        Route::post('swm/getReportData', 'GetReportData');              // Route for get all type of report
+        Route::post('swm/getDemandReceiptData', 'GetDemandReceiptData'); // Route for get all demand receipt report
     });
 });
 

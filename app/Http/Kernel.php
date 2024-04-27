@@ -68,5 +68,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'apiauth' => \App\Http\Middleware\ApiAuth::class,
         'json.response' => \App\Http\Middleware\ForceJsonResponse::class,
+        'auth_maker' => \App\Http\Middleware\AuthMaker::class,
     ];
 }

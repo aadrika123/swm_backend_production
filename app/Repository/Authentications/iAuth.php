@@ -11,17 +11,17 @@ use Illuminate\Http\Request;
  */
 interface iAuth
 {
-    public function login(Request $request);
+    //public function login(Request $request);
 
     public function CurrentLoginData(Request $req);
 
-    public function ChangePassword(Request $req);
+    //public function ChangePassword(Request $req);
 
-    public function logout(Request $request);
+    //public function logout(Request $request);
 
-    public function CreateUser(Request $req);
+    //public function CreateUser(Request $req);
 
-    public function UpdateUser(Request $req);
+    //public function UpdateUser(Request $req);
 
     public function getAllUser(Request $req);
 

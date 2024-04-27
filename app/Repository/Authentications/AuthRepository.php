@@ -12,6 +12,8 @@ use App\Models\UserLoginDetail;
 use App\Models\MenuMaster;
 use App\Models\MenuPermission;
 use App\Repository\Authentications\iAuth;
+use App\Models\ViewUser;
+use App\Models\UlbMaster;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Http\Request;
@@ -31,101 +33,104 @@ class AuthRepository implements iAuth
 
     protected $dbConn;
     protected $Ward;
+    protected $masterConnection;
 
     public function __construct(Request $request)
     {
-        $this->dbConn = $this->GetSchema($request->bearerToken());
+        $this->dbConn = DB::connection()->getName();
+        $this->masterConnection = DB::connection('pgsql_master')->getName();
 
         $this->Ward = new Ward($this->dbConn);
     }
-    public function login(Request $req)
-    {
+    // public function login(Request $req)
+    // {
 
 
-        try {
-            $validator = Validator::make($req->all(), [
-                'userName' => 'required',
-                'password' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['status' => False, 'msg' => $validator->messages()]);
-            }
-            $refUserName = TblUserMstr::where('user_name', $req->userName)
-                ->where('status', 1)
-                ->first();
-            // If the Username is existing
-            if ($refUserName) {
-                // Checking Password
-                $passStmt = $refUserName->user_password == md5($req->password);
-                if ($passStmt == true) {
-                    $token = $refUserName->createToken('my-app-token')->plainTextToken;
-                    $refUserName->remember_token = $token;
+    //     try {
+    //         $validator = Validator::make($req->all(), [
+    //             'userName' => 'required',
+    //             'password' => 'required',
+    //         ]);
+    //         if ($validator->fails()) {
+    //             return response()->json(['status' => False, 'msg' => $validator->messages()]);
+    //         }
+    //         $refUserName = TblUserMstr::where('user_name', $req->userName)
+    //             ->where('status', 1)
+    //             ->first();
+    //         // If the Username is existing
+    //         if ($refUserName) {
+    //             // Checking Password
+    //             $passStmt = $refUserName->user_password == md5($req->password);
+    //             if ($passStmt == true) {
+    //                 $token = $refUserName->createToken('my-app-token')->plainTextToken;
+    //                 $refUserName->remember_token = $token;
 
 
-                    if ($refUserName->id > 0) {
-                        # the code is edited by sam
-                        # date : 05/11/2022
-                        $getdefault = UserWardPermission::select('ulb_id','tbl_ulb_list.ulb_name')
-                            ->join('tbl_ulb_list','tbl_ulb_list.id','=','tbl_user_ward.ulb_id')
-                            ->where('user_id', $refUserName->id)
-                            ->groupby('ulb_id','ulb_name')
-                            ->first();
-                        # the end of the edited code by sam
-                        if ($getdefault->ulb_id > 0)
-                            $refUserName->current_ulb = $getdefault->ulb_id; // Use for set db conncetion dynamic 
-                        $refUserName->save();
+    //                 if ($refUserName->id > 0) {
+    //                     # the code is edited by sam
+    //                     # date : 05/11/2022
+    //                     $getdefault = UserWardPermission::select('ulb_id','tbl_ulb_list.ulb_name')
+    //                         ->join('tbl_ulb_list','tbl_ulb_list.id','=','tbl_user_ward.ulb_id')
+    //                         ->where('user_id', $refUserName->id)
+    //                         ->groupby('ulb_id','ulb_name')
+    //                         ->first();
+    //                     # the end of the edited code by sam
+    //                     if ($getdefault->ulb_id > 0)
+    //                         $refUserName->current_ulb = $getdefault->ulb_id; // Use for set db conncetion dynamic 
+    //                     $refUserName->save();
 
-                        $userlog = new UserLoginDetail();
-                        $userlog->user_id = $refUserName->id;
-                        $userlog->login_date = Carbon::now()->format("Y-m-d");
-                        $userlog->login_time = Carbon::now()->format("h:i:s a");
-                        $userlog->ip_address = $req->ip();
-                        $userlog->save();
-                    }
+    //                     $userlog = new UserLoginDetail();
+    //                     $userlog->user_id = $refUserName->id;
+    //                     $userlog->login_date = Carbon::now()->format("Y-m-d");
+    //                     $userlog->login_time = Carbon::now()->format("h:i:s a");
+    //                     $userlog->ip_address = $req->ip();
+    //                     $userlog->save();
+    //                 }
 
-                    // $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id];
-                    //changed by talib
-                    # edited code by sam
-                    $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id, 'userTypeId' => $refUserName->user_type_id,'ulbId'=>$getdefault->ulb_id,'ulbName'=>$getdefault->ulb_name];
-                    # end of edited code
-                    //changed by talib
-                    return response($response, 200);
-                }
-                // If Password Does not Matched
-                if ($passStmt == false) {
-                    $response = ['status' => True, 'loginstatus' => 0, 'msg' => 'Incorrect Password', 'data' => ''];
-                    return response($response, 200);
-                }
-            }
-            // If the UserName is not Existing
-            if (!$refUserName) {
-                $message = ['status' => True, 'loginstatus' => 0, 'msg' => 'UserName not Found', 'data' => ''];
-                return response()->json($message, 200);
-            }
-        } catch (Exception $e) {
-            return response()->json(['status' => False, 'loginstatus' => 0, 'data' => '', 'msg' => $e], 400);
-        }
-    }
+    //                 // $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id];
+    //                 //changed by talib
+    //                 # edited code by sam
+    //                 $response = ['status' => True, 'loginstatus' => 1, 'msg' => 'You Have Logged In', 'data' => $token, 'userId' => $refUserName->id, 'userTypeId' => $refUserName->user_type_id,'ulbId'=>$getdefault->ulb_id,'ulbName'=>$getdefault->ulb_name];
+    //                 # end of edited code
+    //                 //changed by talib
+    //                 return response($response, 200);
+    //             }
+    //             // If Password Does not Matched
+    //             if ($passStmt == false) {
+    //                 $response = ['status' => True, 'loginstatus' => 0, 'msg' => 'Incorrect Password', 'data' => ''];
+    //                 return response($response, 200);
+    //             }
+    //         }
+    //         // If the UserName is not Existing
+    //         if (!$refUserName) {
+    //             $message = ['status' => True, 'loginstatus' => 0, 'msg' => 'UserName not Found', 'data' => ''];
+    //             return response()->json($message, 200);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'loginstatus' => 0, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
 
     public function CurrentLoginData(Request $req)
     {
         try {
             $response = array();
             if ($req->userId) {
-                $lastLogin = DB::table('view_user_mstr')
-                    ->where('id', $req->userId)
-                    ->where('status', 1)
-                    ->first();
-                $response['id'] = $lastLogin->id;
-                $response['userId'] = $lastLogin->user_name;
-                $response['userName'] = $lastLogin->name;
-                $response['designation'] = $lastLogin->user_type;
-                $response['mobileNo'] = $lastLogin->contactno;
-                $response['address'] = $lastLogin->address;
-                $response['image'] = $lastLogin->photo_path;
-                $response['lastVisitedTime'] = $lastLogin->login_time;
-                $response['lastVisitedDate'] = date('d-m-Y', $lastLogin->login_date);
-                $response['lastIpAddress'] = $lastLogin->ip_address;
+                $lastLogin =(new ViewUser)->setConnection($this->masterConnection)->where('id', $req->userId)->where('suspended', false)->first();
+
+                if($lastLogin)
+                {
+                    $response['id'] = $lastLogin->id;
+                    $response['userId'] = $lastLogin->user_name;
+                    $response['userName'] = $lastLogin->name;
+                    $response['designation'] = $lastLogin->user_type;
+                    $response['mobileNo'] = $lastLogin->contactno;
+                    $response['address'] = $lastLogin->address;
+                    $response['image'] = $lastLogin->photo_path;
+                    $response['lastVisitedTime'] = Carbon::create($lastLogin->updated_at)->format('h:i A');
+                    $response['lastVisitedDate'] = Carbon::create($lastLogin->updated_at)->format('d-m-Y');
+                    $response['lastIpAddress'] = '';
+                }
 
                 return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
             } else {
@@ -136,288 +141,287 @@ class AuthRepository implements iAuth
         }
     }
 
-    public function ChangePassword(Request $req)
-    {
+    // public function ChangePassword(Request $req)
+    // {
 
 
-        try {
+    //     try {
 
-            $validator = Validator::make($req->all(), [
-                'userName' => 'required',
-                'oldPassword' => 'required',
-                'newPassword' => 'required',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['status' => False, 'msg' => $validator->messages()]);
-            }
+    //         $validator = Validator::make($req->all(), [
+    //             'userName' => 'required',
+    //             'oldPassword' => 'required',
+    //             'newPassword' => 'required',
+    //         ]);
+    //         if ($validator->fails()) {
+    //             return response()->json(['status' => False, 'msg' => $validator->messages()]);
+    //         }
 
-            $refUserName = TblUserMstr::where('user_name', $req->userName)
-                ->first();
-            // If the Username is existing
-            if ($refUserName) {
-                // Checking Password
-                $passStmt = $refUserName->user_password == md5($req->oldPassword);
-                if ($passStmt == true) {
-                    $refUserName->user_password = md5($req->newPassword);
-                    $refUserName->save();
+    //         $refUserName = TblUserMstr::where('user_name', $req->userName)
+    //             ->first();
+    //         // If the Username is existing
+    //         if ($refUserName) {
+    //             // Checking Password
+    //             $passStmt = $refUserName->user_password == md5($req->oldPassword);
+    //             if ($passStmt == true) {
+    //                 $refUserName->user_password = md5($req->newPassword);
+    //                 $refUserName->save();
 
-                    $response = ['status' => true, 'msg' => 'Changed password successfully', 'data' => ''];
-                    return response($response, 200);
-                }
-                // If Password Does not Matched
-                if ($passStmt == false) {
-                    $response = ['status' => true, 'msg' => 'Incorrect old password', 'data' => ''];
-                    return response($response, 200);
-                }
-            }
-            // If the UserName is not Existing
-            if (!$refUserName) {
-                $message = ['status' => true, 'msg' => 'UserName not Found', 'data' => ''];
-                return response()->json($message, 200);
-            }
-        } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
-        }
-    }
+    //                 $response = ['status' => true, 'msg' => 'Changed password successfully', 'data' => ''];
+    //                 return response($response, 200);
+    //             }
+    //             // If Password Does not Matched
+    //             if ($passStmt == false) {
+    //                 $response = ['status' => true, 'msg' => 'Incorrect old password', 'data' => ''];
+    //                 return response($response, 200);
+    //             }
+    //         }
+    //         // If the UserName is not Existing
+    //         if (!$refUserName) {
+    //             $message = ['status' => true, 'msg' => 'UserName not Found', 'data' => ''];
+    //             return response()->json($message, 200);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
 
-    public function logout(Request $request)
-    {
-        try {
-            Auth::logout();
-            return response()->json(['status' => True, 'data' => '', 'msg' => 'You are login out'], 200);
-        } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
-        }
-    }
+    // public function logout(Request $request)
+    // {
+    //     try {
+    //         Auth::logout();
+    //         return response()->json(['status' => True, 'data' => '', 'msg' => 'You are login out'], 200);
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
 
-    public function CreateUser(Request $req)
-    {
-        # edited code by sam
-        $userId = Auth::user()->id;
-        $ulbId = $this->GetUlbId($userId);
-        # ended 
+    // public function CreateUser(Request $req)
+    // {
+    //     $user = Auth()->user();
+    //     $ulbId = $user->ulb_id;
+    //     $userId = $user->id;
 
-        try {
-            $validator = Validator::make($req->all(), [
-                'name' => 'required',
-                'contactNo' => 'required',
-                'address' => 'required',
-                'userType' => 'required',
-                'photo' => 'mimes:jpeg,png,jpg,png|max:200',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['status' => False, 'msg' => $validator->messages()]);
-            }
+    //     try {
+    //         $validator = Validator::make($req->all(), [
+    //             'name' => 'required',
+    //             'contactNo' => 'required',
+    //             'address' => 'required',
+    //             'userType' => 'required',
+    //             'photo' => 'mimes:jpeg,png,jpg,png|max:200',
+    //         ]);
+    //         if ($validator->fails()) {
+    //             return response()->json(['status' => False, 'msg' => $validator->messages()]);
+    //         }
 
-            $userId = $req->userId;
-            $password = md5(12345);
-            $date = date('Y-m-d H:i:s');
+    //         $userId = $req->userId;
+    //         $password = md5(12345);
+    //         $date = date('Y-m-d H:i:s');
 
-            $userDtl = new UserDetails();
-            $userDtl->name = $req->name;
-            $userDtl->contactno = $req->contactNo;
-            $userDtl->address = $req->address;
-            $userDtl->ulb_id = $ulbId;
-            $userDtl->save();
+    //         $userDtl = new UserDetails();
+    //         $userDtl->name = $req->name;
+    //         $userDtl->contactno = $req->contactNo;
+    //         $userDtl->address = $req->address;
+    //         $userDtl->ulb_id = $ulbId;
+    //         $userDtl->save();
 
-            if ($userDtl->id) {
-                $userType = UserType::find($req->userType);
-                $fname = explode(" ", $req->name);
+    //         if ($userDtl->id) {
+    //             $userType = UserType::find($req->userType);
+    //             $fname = explode(" ", $req->name);
 
-                $user = new TblUserMstr();
+    //             $user = new TblUserMstr();
 
-                $user->user_det_id = $userDtl->id;
-                $user->user_type_id = $req->userType;
-                $user->user_password = $password;
-                $user->ip_address = $req->ip();
-                $user->user_id = $userId;
-                $user->stampdate = $date;
-                $user->status = 1;
+    //             $user->user_det_id = $userDtl->id;
+    //             $user->user_type_id = $req->userType;
+    //             $user->user_password = $password;
+    //             $user->ip_address = $req->ip();
+    //             $user->user_id = $userId;
+    //             $user->stampdate = $date;
+    //             $user->status = 1;
 
-                $user->original_pass = 12345;
-                $user->save();
+    //             $user->original_pass = 12345;
+    //             $user->save();
 
-                if ($user->id) {
-                    $filePath = '';
-                    //change by talib
-                    //$filePath = 'test_path';
-                    //change by talib
+    //             if ($user->id) {
+    //                 $filePath = '';
+    //                 //change by talib
+    //                 //$filePath = 'test_path';
+    //                 //change by talib
 
-                    if (!empty($req->photo)) {
-                        $filePath = md5($userDtl->id) . '.' . $req->photo->extension();
-                        $req->photo->move(public_path('uploads/user'), $filePath);
-                    }
+    //                 if (!empty($req->photo)) {
+    //                     $filePath = md5($userDtl->id) . '.' . $req->photo->extension();
+    //                     $req->photo->move(public_path('uploads/user'), $filePath);
+    //                 }
 
-                    $username = $fname[0] . "_" . $userType->short_name . "_" . $user->id;
-                    $user->user_name = $username;
-                    $user->photo_path = $filePath;
-                    $user->save();
+    //                 $username = $fname[0] . "_" . $userType->short_name . "_" . $user->id;
+    //                 $user->user_name = $username;
+    //                 $user->photo_path = $filePath;
+    //                 $user->save();
 
-                    # edited by sam
-                    // if (isset($req->wards) && isset($req->ulbId)) {
-                    if (isset($req->wards) && isset($ulbId)) {      //<--------here
-                        $wardarray = explode(',', $req->wards);
-                        foreach ($wardarray as $key => $value) {
-                            $permission  = new UserWardPermission();
-                            $permission->user_det_id = $userDtl->id;
-                            $permission->user_id = $user->id;
-                            // $permission->ulb_id = $req->ulbId;
-                            $permission->ulb_id = $ulbId;           //<------------here
-                            $permission->ward_id = $value;
-                            $permission->save();
-                        }
-                    }
+    //                 # edited by sam
+    //                 // if (isset($req->wards) && isset($req->ulbId)) {
+    //                 if (isset($req->wards) && isset($ulbId)) {      //<--------here
+    //                     $wardarray = explode(',', $req->wards);
+    //                     foreach ($wardarray as $key => $value) {
+    //                         $permission  = new UserWardPermission();
+    //                         $permission->user_det_id = $userDtl->id;
+    //                         $permission->user_id = $user->id;
+    //                         // $permission->ulb_id = $req->ulbId;
+    //                         $permission->ulb_id = $ulbId;           //<------------here
+    //                         $permission->ward_id = $value;
+    //                         $permission->save();
+    //                     }
+    //                 }
 
-                    if (isset($ulbId) && !isset($req->wards)) {     //<---------here
-                        //foreach ($ulbId as $ulb) 
-                        {          //<-----here
-                            $permission  = new UserWardPermission();
-                            $permission->user_det_id = $userDtl->id;
-                            $permission->user_id = $user->id;
-                            $permission->ulb_id = $ulbId;           //<----------here
-                            $permission->save();
-                        }
-                    }
-                    # ended 
-                    return response()->json(['status' => True, 'data' => '', 'msg' => 'User created successfully. user name:' . $username . ' and temporary password:12345'], 200);
-                }
-            } else {
-                return response()->json(['status' => True, 'data' => '', 'msg' => 'Employee created but user not created due to technical issue'], 200);
-            }
-        } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
-        }
-    }
+    //                 if (isset($ulbId) && !isset($req->wards)) {     //<---------here
+    //                     //foreach ($ulbId as $ulb) 
+    //                     {          //<-----here
+    //                         $permission  = new UserWardPermission();
+    //                         $permission->user_det_id = $userDtl->id;
+    //                         $permission->user_id = $user->id;
+    //                         $permission->ulb_id = $ulbId;           //<----------here
+    //                         $permission->save();
+    //                     }
+    //                 }
+    //                 # ended 
+    //                 return response()->json(['status' => True, 'data' => '', 'msg' => 'User created successfully. user name:' . $username . ' and temporary password:12345'], 200);
+    //             }
+    //         } else {
+    //             return response()->json(['status' => True, 'data' => '', 'msg' => 'Employee created but user not created due to technical issue'], 200);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
 
-    public function UpdateUser(Request $req)
-    {
-        # edited code by sam
-        $ulbuserId = Auth::user()->id;
-        $ulbId = $this->GetUlbId($ulbuserId);
-        # ended 
+    // public function UpdateUser(Request $req)
+    // {
+    //     $user = Auth()->user();
+    //     $ulbId = $user->ulb_id;
+    //     $userId = $user->id;
 
-        try {
-            $validator = Validator::make($req->all(), [
-                'userId' => 'required',
-                'name' => 'required',
-                'contactNo' => 'required',
-                'address' => 'required',
-                'userType' => 'required',
-                'photo' => 'mimes:jpeg,png,jpg,png|max:200',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['status' => False, 'msg' => $validator->messages()]);
-            }
+    //     try {
+    //         $validator = Validator::make($req->all(), [
+    //             'userId' => 'required',
+    //             'name' => 'required',
+    //             'contactNo' => 'required',
+    //             'address' => 'required',
+    //             'userType' => 'required',
+    //             'photo' => 'mimes:jpeg,png,jpg,png|max:200',
+    //         ]);
+    //         if ($validator->fails()) {
+    //             return response()->json(['status' => False, 'msg' => $validator->messages()]);
+    //         }
 
-            $userId = Auth::user()->id;
-            $date = date('Y-m-d H:i:s');
+    //         $userId = Auth::user()->id;
+    //         $date = date('Y-m-d H:i:s');
 
-            $userDtl = UserDetails::select('tbl_user_details.*')->join('tbl_user_mstr as u', 'u.user_det_id', '=', 'tbl_user_details.id')->where('u.id', $req->userId)->first();
-            $userDtl->name = $req->name;
-            $userDtl->contactno = $req->contactNo;
-            $userDtl->address = $req->address;
-            $userDtl->save();
+    //         $userDtl = UserDetails::select('tbl_user_details.*')->join('tbl_user_mstr as u', 'u.user_det_id', '=', 'tbl_user_details.id')->where('u.id', $req->userId)->first();
+    //         $userDtl->name = $req->name;
+    //         $userDtl->contactno = $req->contactNo;
+    //         $userDtl->address = $req->address;
+    //         $userDtl->save();
 
-            if ($userDtl->id) {
+    //         if ($userDtl->id) {
 
-                // $filePath = '';
-                //changed by talib
-                $filePath = 'test_path';
-                //changed by talib
-                if (!empty($req->photo)) {
-                    $filePath = md5($userDtl->id) . '.' . $req->photo->extension();
-                    $req->photo->move(public_path('uploads/employee'), $filePath);
-                }
+    //             // $filePath = '';
+    //             //changed by talib
+    //             $filePath = 'test_path';
+    //             //changed by talib
+    //             if (!empty($req->photo)) {
+    //                 $filePath = md5($userDtl->id) . '.' . $req->photo->extension();
+    //                 $req->photo->move(public_path('uploads/employee'), $filePath);
+    //             }
 
-                $user = TblUserMstr::find($req->userId);
-                $user->user_type_id = $req->userType;
-                $user->ip_address = $req->ip();
-                $user->user_id = $userId;
-                $user->stampdate = $date;
-                $user->photo_path = $filePath;
-                $user->save();
+    //             $user = TblUserMstr::find($req->userId);
+    //             $user->user_type_id = $req->userType;
+    //             $user->ip_address = $req->ip();
+    //             $user->user_id = $userId;
+    //             $user->stampdate = $date;
+    //             $user->photo_path = $filePath;
+    //             $user->save();
 
-                if ($user->id) {
+    //             if ($user->id) {
 
-                    // if (isset($req->wards) && isset($req->ulbId)) {
-                    if (isset($req->wards) && isset($ulbId)) {  //<-------here
-                        $wardarray = explode(',', $req->wards);
-                        UserWardPermission::where('user_id', $req->userId)
-                            // ->where('ulb_id', $req->ulbId)
-                            ->where('ulb_id', $ulbId)  //<-----------here
-                            ->whereNotNull('ward_id')
-                            ->update(['stts' => 0]);
+    //                 // if (isset($req->wards) && isset($req->ulbId)) {
+    //                 if (isset($req->wards) && isset($ulbId)) {  //<-------here
+    //                     $wardarray = explode(',', $req->wards);
+    //                     UserWardPermission::where('user_id', $req->userId)
+    //                         // ->where('ulb_id', $req->ulbId)
+    //                         ->where('ulb_id', $ulbId)  //<-----------here
+    //                         ->whereNotNull('ward_id')
+    //                         ->update(['stts' => 0]);
 
-                        foreach ($wardarray as $key => $value) {
+    //                     foreach ($wardarray as $key => $value) {
 
-                            $permission = UserWardPermission::where('user_id', $req->userId)
-                                // ->where('ulb_id', $req->ulbId)
-                                ->where('ulb_id', $ulbId)  //<--------here
-                                ->where('ward_id', $value)
-                                ->first();
+    //                         $permission = UserWardPermission::where('user_id', $req->userId)
+    //                             // ->where('ulb_id', $req->ulbId)
+    //                             ->where('ulb_id', $ulbId)  //<--------here
+    //                             ->where('ward_id', $value)
+    //                             ->first();
 
-                            if ($permission) {
-                                $permission->stts = 1;
-                                $permission->save();
-                            } else {
+    //                         if ($permission) {
+    //                             $permission->stts = 1;
+    //                             $permission->save();
+    //                         } else {
 
-                                $perm  = new UserWardPermission();
-                                $perm->user_det_id = $userDtl->id;
-                                $perm->user_id = $user->id;
-                                // $perm->ulb_id = $req->ulbId;
-                                $perm->ulb_id = $ulbId;    //<--------here
-                                $perm->ward_id = $value;
-                                $perm->save();
-                            }
-                        }
-                    }
+    //                             $perm  = new UserWardPermission();
+    //                             $perm->user_det_id = $userDtl->id;
+    //                             $perm->user_id = $user->id;
+    //                             // $perm->ulb_id = $req->ulbId;
+    //                             $perm->ulb_id = $ulbId;    //<--------here
+    //                             $perm->ward_id = $value;
+    //                             $perm->save();
+    //                         }
+    //                     }
+    //                 }
 
-                    if (isset($ulbId) && !isset($req->wards)) { //<-------here
-                        $ulbarray = explode(',', $ulbId);   //<-----------here
-                        UserWardPermission::where('user_id', $req->userId)
-                            ->whereNull('ward_id')
-                            ->update(['stts' => 0]);
+    //                 if (isset($ulbId) && !isset($req->wards)) { //<-------here
+    //                     $ulbarray = explode(',', $ulbId);   //<-----------here
+    //                     UserWardPermission::where('user_id', $req->userId)
+    //                         ->whereNull('ward_id')
+    //                         ->update(['stts' => 0]);
 
-                        foreach ($ulbarray as $key => $value) {
-                            $permission = UserWardPermission::where('user_id', $req->userId)
-                                ->where('ulb_id', $value)
-                                ->whereNull('ward_id')
-                                ->first();
+    //                     foreach ($ulbarray as $key => $value) {
+    //                         $permission = UserWardPermission::where('user_id', $req->userId)
+    //                             ->where('ulb_id', $value)
+    //                             ->whereNull('ward_id')
+    //                             ->first();
 
-                            if ($permission) {
-                                $permission->stts = 1;
-                                $permission->save();
-                            } else {
+    //                         if ($permission) {
+    //                             $permission->stts = 1;
+    //                             $permission->save();
+    //                         } else {
 
-                                $perm  = new UserWardPermission();
-                                $perm->user_det_id = $userDtl->id;
-                                $perm->user_id = $user->id;
-                                $perm->ulb_id = $value;
-                                $perm->save();
-                            }
-                        }
-                    }
+    //                             $perm  = new UserWardPermission();
+    //                             $perm->user_det_id = $userDtl->id;
+    //                             $perm->user_id = $user->id;
+    //                             $perm->ulb_id = $value;
+    //                             $perm->save();
+    //                         }
+    //                     }
+    //                 }
 
-                    return response()->json(['status' => True, 'data' => '', 'msg' => 'User updated successfully.'], 200);
-                }
-            } else {
-                return response()->json(['status' => True, 'data' => '', 'msg' => 'Employee not updated'], 200);
-            }
-        } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
-        }
-    }
+    //                 return response()->json(['status' => True, 'data' => '', 'msg' => 'User updated successfully.'], 200);
+    //             }
+    //         } else {
+    //             return response()->json(['status' => True, 'data' => '', 'msg' => 'Employee not updated'], 200);
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
 
 
     public function getAllUser(Request $req)
     {
-        # edited code by sam
-        $ulbId = $this->GetUlbId($req->user()->id);
-        # ended
+        $user = Auth()->user();
+        $ulbId = $user->ulb_id;
+        $userId = $user->id;
+        
         try {
             $response = array();
 
-            $allUser = DB::table('view_user_mstr')->where('ulb_id', $ulbId);
+            $allUser = ViewUser::where('ulb_id', $ulbId);
 
             if ($req->userId) {
                 $allUser = $allUser->where('id', $req->userId);
@@ -431,13 +435,13 @@ class AuthRepository implements iAuth
                 $val['designation'] = $user->user_type;
                 $val['mobileNo'] = $user->contactno;
                 $val['address'] = $user->address;
-                $val['image'] = public_path('uploads\user') . $user->photo_path;
+                $val['image'] = $user->photo_relative_path.'/'.$user->photo;
                 $val['lastVisitedTime'] = $user->login_time;
-                $val['lastVisitedDate'] = date('d-m-Y', $user->login_date);
+                $val['lastVisitedDate'] = Carbon::create($user->login_date)->format('d-m-Y');
                 $val['lastIpAddress'] = $user->ip_address;
                 $val['status'] = ($user->status == 1) ? 'Active' : 'Deactive';
                 # edited code by sam
-                $val['ulbDetails'] = ($req->userId) ? $this->GetUlbsWithWard($req->userId, $this->Ward) : $this->GetUlbs($user->id);
+                $val['ulbDetails'] = ($req->userId) ? (new UlbMaster)->GetUlbsWithWard($req->userId, $this->Ward) : $this->GetUlbs($user->id);
                 # ended
                 //changed by talib
                 $val['userTypeId'] = $user->user_type_id;
@@ -475,9 +479,9 @@ class AuthRepository implements iAuth
 
     public function getUserFormDate(Request $request)
     {
-        # code updated by sam
-        $ulbId = $this->GetUlbId($request->user()->id);
-        # ended
+        $user = Auth()->user();
+        $ulbId = $user->ulb_id;
+        $userId = $user->id;
         try {
 
             $responseData = array();
@@ -497,9 +501,12 @@ class AuthRepository implements iAuth
         try {
             $response = array();
             $whereparam = '';
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
 
-            if (isset($req->ulbId)) {
-                $whereparam = ' and uw.ulb_id=' . $req->ulbId;
+            if (isset($ulbId)) {
+                $whereparam = ' and uw.ulb_id=' . $ulbId;
             }
 
             $sql = "SELECT distinct name,uw.user_id,contactno,address FROM view_user_mstr um
@@ -560,7 +567,9 @@ class AuthRepository implements iAuth
                 return response()->json(['status' => False, 'msg' => $validator->messages()]);
             }
 
-            $userId = $req->user()->id;
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $menu = new MenuMaster();
             $menu->menu_name = $req->menuName;
             $menu->file_path = $req->menuPath;
@@ -642,7 +651,9 @@ class AuthRepository implements iAuth
                 return response()->json(['status' => False, 'msg' => $validator->messages()]);
             }
 
-            $userId = $req->user()->id;
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $menu = MenuMaster::find($req->menuId);
             $menu->menu_name = $req->menuName;
             $menu->file_path = $req->menuPath;

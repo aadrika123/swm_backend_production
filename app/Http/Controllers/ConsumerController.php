@@ -15,6 +15,7 @@ class ConsumerController extends Controller
 
     //  Initializing construct function for Repositoy
     protected $consumer;
+    protected $ConResp;
     public function __construct(iConsumerRepository $consumer)
     {
         $this->ConResp = $consumer;
@@ -161,6 +162,18 @@ class ConsumerController extends Controller
     public function getDashboardData(Request $req)
     {
         return $this->ConResp->DashboardData($req);
+    }
+
+
+    /**
+     * Get Analytic dashboard data.
+     *
+     * @param  $request
+     * @return ConsumerRepository->AnalyticDashboardData
+     */
+    public function getAnalyticDashboardData(Request $req)
+    {
+        return $this->ConResp->AnalyticDashboardData($req);
     }
 
 
@@ -596,6 +609,18 @@ class ConsumerController extends Controller
     public function PaymentAdjustmentList(Request $req)
     {
         return $this->ConResp->PaymentAdjustmentList($req);
+    }
+
+
+    /**
+     * Created default consumers and their demands of that apartment
+     *
+     * @param  $request
+     * @return ConsumerRepository->DefaultConsumerAdd
+     */
+    public function DefaultConsumerApartment(Request $req)
+    {
+        return $this->ConResp->DefaultConsumerAdd($req);
     }
 
     

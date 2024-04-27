@@ -9,5 +9,11 @@ class UserWardPermission extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'tbl_user_ward';
+    protected $table = 'wf_ward_users';
+
+    public function __construct($data = null)
+    {
+        //$this->connection = Session::get('ulb');
+        $this->connection = $data;
+    }
 }

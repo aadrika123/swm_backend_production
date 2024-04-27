@@ -9,5 +9,7 @@ class UserDetails extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'tbl_user_details';
+    protected $connection= 'pgsql_master';
+    protected $table = 'user';
+
 }

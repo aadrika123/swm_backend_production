@@ -25,6 +25,7 @@ class MasterRepository implements iMasterRepository
     use Helpers;
 
     protected $dbConn;
+    protected $masterConnection;
     protected $Apartment;
     protected $ConsumerType;
     protected $ConsumerCategory;
@@ -33,7 +34,8 @@ class MasterRepository implements iMasterRepository
     public function __construct(Request $request)
     {
 
-        $this->dbConn = $this->GetSchema($request->bearerToken());
+        $this->dbConn = DB::connection()->getName();
+        $this->masterConnection = DB::connection('pgsql_master')->getName();
 
         $this->Ward = new Ward($this->dbConn);
         $this->Apartment = new Apartment($this->dbConn);
@@ -45,7 +47,9 @@ class MasterRepository implements iMasterRepository
     {
 
         try {
-            $ulbId = $this->GetUlbId($request->user()->id);
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $responseData = array();
             $responseData['wardList'] = $this->Ward->where('ulb_id', $ulbId)->orderBy('sqorder', 'asc')->get();
             $responseData['consumerCategory'] = $this->ConsumerCategory->get();
@@ -60,33 +64,35 @@ class MasterRepository implements iMasterRepository
     public function getApartmentList(Request $request)
     {
         # code updated by sam
-        $userId = $request->user()->id;
-        $ulbId = $this->GetUlbId($userId);
+        $user = Auth()->user();
+        $ulbId = $user->ulb_id;
+        $userId = $user->id;
+
+
+        
         try {
             $responseData = array();
-            $wardPermission = UserWardPermission::select(DB::raw("GROUP_CONCAT(ward_id) as wards"))
+            $wardPermission = (new UserWardPermission)->setConnection($this->masterConnection)->select(DB::raw("STRING_AGG(ward_id::text, ',') as wards"))
                                                 ->where('user_id', $userId)
-                                                ->where('ulb_id', $ulbId)
                                                 ->groupBy('user_id')
                                                 ->first();
-
-            if (isset($request->wardNo)) {
+            
+            if (isset($request->wardNo) && $request->wardNo !="") {
                 $aptlist = $this->Apartment
                             ->where('ward_no', $request->wardNo)
-                            ->where('ulb_id', $ulbId)
+                            ->where('swm_apartments.ulb_id', $ulbId)
                             ->orderBy('id', 'DESC')
                             ->get();
-            } else
+            } else{
                 $aptlist = $this->Apartment->select('swm_apartments.*')
-                            ->join('swm_wards', 'swm_apartments.ward_no', '=', 'swm_wards.name')
                             ->where('swm_apartments.ulb_id', $ulbId)
                             ->whereIn('ward_no', explode(',', $wardPermission->wards))
                             ->orderBy('swm_apartments.id', 'DESC')->get();
-
+            }
             $responseData['apartmentList'] = $aptlist;
             return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
         } catch (Exception $e) {
-            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
 
@@ -179,8 +185,9 @@ class MasterRepository implements iMasterRepository
     {
 
         try {
-            $userId = $request->user()->id;
-            $ulbId = $this->GetUlbId($userId);
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $validator = Validator::make($request->all(), [
                 'wardNo' => 'required',
                 'aptName' => 'required',
@@ -442,7 +449,7 @@ class MasterRepository implements iMasterRepository
         try {
             $responseData = array();
 
-            $ulblist = ulb::orderBy('id', 'DESC')->get();
+            $ulblist = ulb::where('status', 1)->orderBy('id', 'DESC')->get();
 
             foreach ($ulblist as $ulb) {
                 $val['id'] = $ulb->id;
@@ -617,11 +624,13 @@ class MasterRepository implements iMasterRepository
 
     public function WardUpdate(Request $request)
     {
-         # updated by sam
-         $ulbuserId = $request->user()->id;
-         $ulbId = $this->GetUlbId($ulbuserId);
-         # edited end
+        
         try {
+            # updated by sam
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
+            # edited end    
             $validator = Validator::make($request->all(), [
                 'wardNo' => 'required',
                 'id' => 'required',

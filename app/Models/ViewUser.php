@@ -9,5 +9,6 @@ class ViewUser extends Model
 {
     use HasFactory;
     public $timestamps = false;
-    protected $table = 'view_user_mstr';
+    protected $connection= 'pgsql_master';
+    protected $table = 'users';
 }

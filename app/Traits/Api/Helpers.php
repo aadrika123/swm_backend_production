@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 trait Helpers
 {
     public static $dbname = null;
+
     static function GenerateDemand($schema, $consumerId, $taxrate, $demandFrom, $userId, $ulbId)
     {
 
@@ -49,10 +50,10 @@ trait Helpers
         return $demand;
     }
 
-    static function GetUserDetails($user_id)
+    static function GetUserDetails($user_id, $dbConn)
     {
 
-        $user = ViewUser::where('id', $user_id)->first();
+        $user = (new ViewUser)->setConnection($dbConn)->where('id', $user_id)->first();
         return $user;
     }
 
@@ -147,33 +148,14 @@ trait Helpers
         return $response;
     }
 
-    static function GetAllWard($ulb_id, $user_id, $Ward)
-    {
-        if (isset($user_id)) {
-            $sql = "SELECT ward_id FROM tbl_user_ward w
-            JOIN tbl_ulb_list u on w.ulb_id=u.id
-            WHERE user_id=" . $user_id . " and ulb_id=" . $ulb_id . " and w.stts=1 group by ward_id";
-
-            $ulbs = DB::select($sql);
-            $wardarr = array();
-            if ($ulbs) {
-                foreach ($ulbs as $u) {
-                    $getward = $Ward->where('id', $u->ward_id)
-                        ->first();
-                    if ($getward)
-                        $wardarr[] = $getward->name;
-                }
-            }
-            return $wardarr;
-        }
-    }
+    
 
     public function GetUlbs($user_id)
     {
         if (isset($user_id)) {
             $sql = "SELECT w.ulb_id,ulb_name,ulb FROM tbl_user_ward w
             JOIN tbl_ulb_list u on w.ulb_id=u.id
-            WHERE user_id=" . $user_id . " and w.stts=1 group by w.ulb_id, ulb_name,ulb";
+            WHERE user_id=" . $user_id . " and w.stts=1 and u.status=1 group by w.ulb_id, ulb_name,ulb";
 
             $ulbs = DB::select($sql);
             $ulbarr = array();
@@ -188,29 +170,6 @@ trait Helpers
             return $ulbarr;
         }
     }
-
-    public function GetUlbsWithWard($user_id, $Ward)
-    {
-        if (isset($user_id)) {
-            $sql = "SELECT w.ulb_id,ulb_name,ulb FROM tbl_user_ward w
-            JOIN tbl_ulb_list u on w.ulb_id=u.id
-            WHERE user_id=" . $user_id . " and w.stts=1 group by w.ulb_id, ulb_name,ulb";
-
-            $ulbs = DB::select($sql);
-            $ulbarr = array();
-            if ($ulbs) {
-                foreach ($ulbs as $u) {
-                    $val['ulbId'] = $u->ulb_id;
-                    $val['ulbName'] = $u->ulb_name;
-                    $val['ulb'] = $u->ulb;
-                    $val['wards'] = $this->GetAllWard($u->ulb_id, $user_id, $Ward);
-                    $ulbarr[] = $val;
-                }
-            }
-            return $ulbarr;
-        }
-    }
-
 
 
 

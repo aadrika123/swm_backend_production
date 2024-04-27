@@ -104,4 +104,8 @@ interface iConsumerRepository
     public function updateRoute(Request $request);
 
     public function DeleteRoute(Request $request);
+
+    public function AnalyticDashboardData(Request $request);
+
+    public function DefaultConsumerAdd(Request $request);
 }

@@ -18,4 +18,6 @@ class Ward extends Model
         // $this->connection = Session::get('ulb');
         $this->connection = $data;
     }
+
+    
 }
