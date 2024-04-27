@@ -71,6 +71,17 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->ConsumerAdd($req);
     }
+    
+    /**
+     * Get Analytic dashboard data.
+     *
+     * @param  $request
+     * @return ConsumerRepository->AnalyticDashboardData
+     */
+    public function getAnalyticDashboardData(Request $req)
+    {
+        return $this->ConResp->AnalyticDashboardData($req);
+    }
 
 
 

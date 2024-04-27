@@ -91,7 +91,7 @@ class ReportRepository implements iReportRepository
             if ($request->reportType == 'tranModeChange')
                 $response = $this->TransactionModeChange($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
+            return response()->json(['status' => True, 'data' => ["details"=>$response], 'msg' => ''], 200);
         } else {
             return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
         }

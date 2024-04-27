@@ -104,6 +104,7 @@ Route::group(['middleware' => ['json.response', 'apiauth:sanctum']], function ()
         Route::post('getReprintData', 'getReprintData');
         Route::post('getDemandReceipt', 'GetDemandReceipt');
         Route::post('getdenialNotification', 'DenialNotificationList');
+        Route::post('getAnalyticDashboardData', 'getAnalyticDashboardData');
 
         // Payment adjustments
         Route::post('paymentAdjustment', 'PaymentAdjustment');

@@ -2918,6 +2918,123 @@ class ConsumerRepository implements iConsumerRepository
         }
     }
 
+    public function AnalyticDashboardData(Request $request)
+    {
+        
+        $user = Auth()->user();
+        $ulbId = $user->current_ulb;
+        $userId = $user->id;
+
+        try {
+            $response = array();
+            
+            if (isset($request->fromDate) && isset($request->toDate)) {
+
+                $From = Carbon::create($request->fromDate)->format('Y-m-d');
+                $Upto = Carbon::create($request->toDate)->format('Y-m-d');
+
+                $whereParam = "";
+                if(isset($request->wardNo))
+                    $whereParam = " and ward_no=".$request->wardNo;
+                
+                if(isset($request->category))
+                    $whereParam .= " and consumer_category_id=".$request->category;
+                
+                if(isset($request->tcId))
+                    $whereParam .= " and user_id=".$request->tcId;
+
+                //Consumer Details
+                $sql = "WITH
+                Consumer AS (
+                    SELECT count(*) as total_consumer,
+                                count(CASE WHEN consumer_category_id = 1 THEN id end) as residential,
+                                count(CASE WHEN consumer_category_id != 1 THEN id end) as commercial
+                    FROM swm_consumers where (entry_date between '".$From."' and '".$Upto."') and is_deactivate=0 and ulb_id=".$ulbId." ".$whereParam."
+                ),
+                TotalDmd AS (
+                    select sum(total_tax) as outstanding_amount FROM swm_demands
+                    LEFT JOIN swm_consumers on swm_demands.consumer_id=swm_consumers.id ".$whereParam."
+                    WHERE (payment_to between '".$From."' and '".$Upto."')  and swm_demands.is_deactivate=0 and swm_demands.ulb_id=".$ulbId." and paid_status=0
+                ),
+                AdjustAmt AS (
+                    select sum(adjust_amount) as adjust_amount from swm_demand_adjustments 
+                    LEFT JOIN swm_consumers on swm_demand_adjustments.consumer_id=swm_consumers.id ".$whereParam."
+                    where swm_demand_adjustments.is_deactivate=0 and swm_demand_adjustments.ulb_id=".$ulbId." and (date(swm_demand_adjustments.stampdate) between '".$From."' and '".$Upto."')
+                )
+                SELECT total_consumer,residential,commercial,outstanding_amount,adjust_amount
+                FROM  Consumer,TotalDmd,AdjustAmt";
+                
+                
+                $Report = DB::connection($this->dbConn)->select($sql);
+                if($Report)
+                    $Report = $Report[0];
+
+                // Demand Details
+                $sqldemand = "SELECT YEAR(payment_to) as year, MONTH(payment_to) as month,sum(total_tax) as value  FROM swm_demands 
+                LEFT JOIN swm_consumers on swm_demands.consumer_id=swm_consumers.id ".$whereParam."
+                WHERE (payment_to between '".$From."' and '".$Upto."') 
+                and swm_demands.is_deactivate=0 and swm_demands.ulb_id=".$ulbId."
+                GROUP BY YEAR(payment_to), MONTH(payment_to)";
+
+                $totalDmds = DB::connection($this->dbConn)->select($sqldemand);
+
+                $total_demand = 0;
+                foreach($totalDmds as $dmd)
+                {
+                    $total_demand += $dmd->value;
+                }
+
+                // Arrear Details
+                $sqlarrear = "SELECT YEAR(transaction_date) as year, MONTH(transaction_date) as month,sum(total_payable_amt) as value
+                FROM swm_transactions
+                LEFT JOIN swm_transaction_deactivates on swm_transaction_deactivates.transaction_id=swm_transactions.id
+                LEFT JOIN swm_consumers on swm_transactions.consumer_id=swm_consumers.id ".$whereParam."
+                WHERE swm_transactions.ulb_id=".$ulbId." and swm_transaction_deactivates.transaction_id is null and swm_transactions.paid_status!=0 and transaction_date < '".$From."'
+                GROUP BY YEAR(transaction_date), MONTH(transaction_date)";
+
+                $totalarrears = DB::connection($this->dbConn)->select($sqlarrear);
+
+                // Collection Details
+                $sqlcollection = "SELECT YEAR(transaction_date) as year, MONTH(transaction_date) as month,sum(total_payable_amt) as value,
+                sum(CASE WHEN paid_status = 1 and paid_status !=0 THEN total_payable_amt END) as total_collection,
+                sum(CASE WHEN paid_status = 2 THEN total_payable_amt END) as total_reconcile_pending_amount
+                FROM swm_transactions
+                LEFT JOIN swm_transaction_deactivates on swm_transaction_deactivates.transaction_id=swm_transactions.id
+                LEFT JOIN swm_consumers on swm_transactions.consumer_id=swm_consumers.id ".$whereParam."
+                WHERE swm_transactions.ulb_id=".$ulbId." and swm_transaction_deactivates.transaction_id is null and swm_transactions.paid_status!=0 and (transaction_date between '".$From."' and '".$Upto."')
+                GROUP BY YEAR(transaction_date), MONTH(transaction_date)";
+
+                $totalcolls = DB::connection($this->dbConn)->select($sqlcollection);
+
+                $total_collection = 0;
+                $total_reconcile = 0;
+                foreach($totalcolls as $coll)
+                {
+                    $total_collection += $coll->total_collection;
+                    $total_reconcile += $coll->total_reconcile_pending_amount;
+                }
+                
+
+
+                $response['totalDemand'] = $total_demand;
+                $response['outstandingDemand'] = $Report->outstanding_amount;
+                $response['totalConsumer'] = $Report->total_consumer;
+                $response['totalCollection'] = $total_collection;
+                $response['reconcilePending'] = $total_reconcile;
+                $response['adjustmentAmount'] = $Report->adjust_amount;
+                $response['totalResidenstialConsumer'] = $Report->residential;
+                $response['totalCommercialConsumer'] = $Report->commercial;
+                $response['demand'] = $totalDmds;
+                $response['collection'] = $totalcolls;
+                $response['arrear'] = $totalarrears;
+            }
+
+           return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
+
     public function DeleteRoute(Request $request)
     {
         try {

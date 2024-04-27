@@ -442,7 +442,7 @@ class MasterRepository implements iMasterRepository
         try {
             $responseData = array();
 
-            $ulblist = ulb::orderBy('id', 'DESC')->get();
+            $ulblist = ulb::where('status', 1)->orderBy('id', 'DESC')->get();
 
             foreach ($ulblist as $ulb) {
                 $val['id'] = $ulb->id;
