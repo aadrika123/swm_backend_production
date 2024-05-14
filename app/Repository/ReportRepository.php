@@ -57,48 +57,45 @@ class ReportRepository implements iReportRepository
     {
         $userId = $request->user()->id;
         $ulbId = $this->GetUlbId($userId);
-        try
-        {  
-        $response = array();
-        if (isset($request->fromDate) && isset($request->toDate) && isset($request->reportType)) {
+        try {
             $response = array();
-            // if ($request->reportType == 'dailyCollection')
-            //     $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode);
+            if (isset($request->fromDate) && isset($request->toDate) && isset($request->reportType)) {
+                $response = array();
+                // if ($request->reportType == 'dailyCollection')
+                //     $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode);
 
-            //changed by talib
-            if ($request->reportType == 'dailyCollection')
-                $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->tcId, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode, $ulbId);
-            // changed by talib
+                //changed by talib
+                if ($request->reportType == 'dailyCollection')
+                    $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->tcId, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode, $ulbId);
+                // changed by talib
 
-            if ($request->reportType == 'conAdd')
-                $response = $this->ConsumerAdd($request->fromDate, $request->toDate, $ulbId);
+                if ($request->reportType == 'conAdd')
+                    $response = $this->ConsumerAdd($request->fromDate, $request->toDate, $ulbId);
 
-            if ($request->reportType == 'conDect')
-                $response = $this->ConsumerDect($request->fromDate, $request->toDate, $ulbId);
+                if ($request->reportType == 'conDect')
+                    $response = $this->ConsumerDect($request->fromDate, $request->toDate, $ulbId);
 
-            if ($request->reportType == 'tranDect')
-                $response = $this->TransactionDeactivate($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'tranDect')
+                    $response = $this->TransactionDeactivate($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'cashVeri')
-                $response = $this->CashVerification($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'cashVeri')
+                    $response = $this->CashVerification($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'bankRec')
-                $response = $this->BankReconcilliation($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'bankRec')
+                    $response = $this->BankReconcilliation($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'tcDaily')
-                $response = $this->TcDailyActivity($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'tcDaily')
+                    $response = $this->TcDailyActivity($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'tranModeChange')
-                $response = $this->TransactionModeChange($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'tranModeChange')
+                    $response = $this->TransactionModeChange($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            return response()->json(['status' => True, 'data' => ["details"=>$response], 'msg' => ''], 200);
-        } else {
-            return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
-        }
-        }
-        catch (Exception $e) 
-        {
-            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+                return response()->json(['status' => True, 'data' => ["details" => $response], 'msg' => ''], 200);
+            } else {
+                return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }
     }
 
@@ -116,7 +113,7 @@ class ReportRepository implements iReportRepository
             ->leftjoin('swm_transaction_deactivates as td', 'td.transaction_id', '=', 'swm_transactions.id')
             ->whereBetween('transaction_date', [$From, $Upto])
             ->where('swm_transactions.ulb_id', $ulbId)
-            ->whereNotIn('swm_transactions.paid_status', [0,3])
+            ->whereNotIn('swm_transactions.paid_status', [0, 3])
             ->whereNull('td.id');
 
         //changed by talib
@@ -160,6 +157,8 @@ class ReportRepository implements iReportRepository
             $val['wardNo'] = $trans->ward_no;
             $val['consumerNo'] = $trans->consumer_no;
             $val['consumerName'] = $trans->name;
+            $val['apartmentId'] = $trans->apartment_id;
+            $val['consumerId'] = $trans->consumer_id;
             $val['apartmentCode'] = $trans->apt_code;
             $val['apartmentName'] = $trans->apt_name;
             $val['transactionNo'] = $trans->transaction_no;
@@ -404,7 +403,7 @@ class ReportRepository implements iReportRepository
                 ->get();
             foreach ($trans as $t) {
                 $collectionarr[] = $t->total_payable_amt;
-                $transarr[] = Carbon::create($t->stamp_date)->format('h:i:s a');
+                $transarr[] = Carbon::create($t->stampdate)->format('h:i:s a');
             }
 
             $deny = $this->PaymentDeny->where('user_id', $tcId)
