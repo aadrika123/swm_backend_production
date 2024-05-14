@@ -158,6 +158,7 @@ class ReportRepository implements iReportRepository
             $val['consumerNo'] = $trans->consumer_no;
             $val['consumerName'] = $trans->name;
             $val['apartmentId'] = $trans->apartment_id;
+            
             $val['consumerId'] = $trans->consumer_id;
             $val['apartmentCode'] = $trans->apt_code;
             $val['apartmentName'] = $trans->apt_name;
