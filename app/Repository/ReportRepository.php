@@ -52,7 +52,7 @@ class ReportRepository implements iReportRepository
         $this->PaymentDeny = new PaymentDeny($this->dbConn);
         $this->TransactionModeChange = new TransactionModeChange($this->dbConn);
     }
-
+ #Arshad  
     public function ReportData(Request $request)
     {
         $userId = $request->user()->id;
@@ -148,8 +148,6 @@ class ReportRepository implements iReportRepository
             //$collection = $this->Collections->where('transaction_id', $trans->id);
             $firstrecord = $this->Collections->where('transaction_id', $trans->id)->orderBy('id', 'asc')->first();
             $lastrecord = $this->Collections->where('transaction_id', $trans->id)->orderBy('id', 'desc')->first();
-
-
             $getuserdata = $this->GetUserDetails($trans->user_id);
             $val['tcName'] = $getuserdata->name;
             $val['mobileNo'] = $getuserdata->contactno;
@@ -158,7 +156,6 @@ class ReportRepository implements iReportRepository
             $val['consumerNo'] = $trans->consumer_no;
             $val['consumerName'] = $trans->name;
             $val['apartmentId'] = $trans->apartment_id;
-            
             $val['consumerId'] = $trans->consumer_id;
             $val['apartmentCode'] = $trans->apt_code;
             $val['apartmentName'] = $trans->apt_name;
@@ -221,8 +218,6 @@ class ReportRepository implements iReportRepository
         }
         return $response;
     }
-
-
     public function ConsumerDect($From, $Upto, $ulbId)
     {
         $response = array();
