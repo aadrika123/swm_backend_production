@@ -213,6 +213,7 @@ class ReportRepository implements iReportRepository
             $val['entryDate'] = Carbon::create($consumer->entry_date)->format('d-m-Y');
             $val['consumerNo'] = $consumer->consumer_no;
             $val['consumerName'] = $consumer->name;
+            $val['consumerMobile'] = $consumer->mobile_no;
             $val['entryBy'] = ($user) ? $user->name : "";;
             $response[] = $val;
         }

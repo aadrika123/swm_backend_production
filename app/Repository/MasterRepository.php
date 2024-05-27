@@ -81,9 +81,10 @@ class MasterRepository implements iMasterRepository
                             ->join('swm_wards', 'swm_apartments.ward_no', '=', 'swm_wards.name')
                             ->where('swm_apartments.ulb_id', $ulbId)
                             ->whereIn('ward_no', explode(',', $wardPermission->wards))
+                            ->distinct()
                             ->orderBy('swm_apartments.id', 'DESC')->get();
 
-            $responseData['apartmentList'] = $aptlist;
+           $responseData['apartmentList'] = $aptlist;
             return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
