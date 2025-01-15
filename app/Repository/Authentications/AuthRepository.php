@@ -502,23 +502,23 @@ class AuthRepository implements iAuth
             $response = array();
             $whereparam = '';
             $user = Auth()->user();
-            $ulbId = $user->ulb_id;
-            $userId = $user->id;
+            $ulbId = $user->ulb_id??2;
+            $userId = $user->id ?? 72;
 
             if (isset($ulbId)) {
                 $whereparam = ' and uw.ulb_id=' . $ulbId;
             }
 
-            $sql = "SELECT distinct name,uw.user_id,contactno,address FROM view_user_mstr um
-            left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
-            where user_type='Tax Collector' " . $whereparam. " order by name asc";
+            $sql = "SELECT distinct name,id,mobile,address FROM users";
+            // left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
+            // where user_type='Tax Collector' " . $whereparam. " order by name asc";
             $allUser = DB::select($sql);
 
 
             foreach ($allUser as $user) {
-                $val['tcId'] = $user->user_id;
+                $val['tcId'] = $user->id;
                 $val['tcName'] = $user->name;
-                $val['mobileNo'] = $user->contactno;
+                $val['mobileNo'] = $user->mobile;
                 $val['address'] = $user->address;
                 $response[] = $val;
             }
