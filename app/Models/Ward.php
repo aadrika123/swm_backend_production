@@ -11,7 +11,8 @@ class Ward extends Model
     use HasFactory;
     protected $connection;
     public $timestamps = false;
-    protected $table = 'swm_wards';
+    // protected $table = 'swm_wards';
+    protected $table = 'ulb_ward_masters';
 
     public function __construct($data = null)
     {

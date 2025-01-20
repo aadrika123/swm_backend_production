@@ -488,9 +488,13 @@ class AuthRepository implements iAuth
         try {
 
             $responseData = array();
-            $responseData['wardList'] = $this->Ward->where('ulb_id', $ulbId)->orderBy('sqorder', 'asc')->get();
+            $responseData['wardList'] = $this->Ward->select('id', 'ulb_id', 'ward_name')
+                ->where('ulb_id', $ulbId)
+                ->orderBy('id', 'asc')
+                ->get();
+
             $responseData['ulbList'] = Ulb::get();
-            $responseData['userType'] = UserType::get();
+            // $responseData['userType'] = UserType::get();
 
             return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
         } catch (Exception $e) {
