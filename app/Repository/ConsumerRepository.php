@@ -2615,7 +2615,7 @@ class ConsumerRepository implements iConsumerRepository
                 $val['apartmentName'] = ($d->apartment_id > 0) ? $d->apt_name : "";
                 $val['wardNo'] = ($d->ward_no) ? $d->ward_no : $d->apt_ward_no;
                 $val['address'] = ($d->address) ? $d->address : $d->apt_address;
-                $val['denyBy'] = $this->GetUserDetails($d->user_id)->name;
+                $val['denyBy'] = $this->GetUserDetails($d->user_id,$this->masterConnection)->name;
                 $val['denyDate'] = date('d-m-Y h:i A', strtotime($d->deny_date));
                 $val['outstandingAmount'] = $d->outstanding_amount;
                 $val['remarks'] = $d->denied_reason;
