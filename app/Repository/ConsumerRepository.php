@@ -2519,7 +2519,7 @@ class ConsumerRepository implements iConsumerRepository
                     }
 
 
-                    $getTc = $this->GetUserDetails($userId);
+                    $getTc = $this->GetUserDetails($userId ,$this->masterConnection);
 
 
                     $response['consumerName'] = isset($demand->name) ? $demand->name : '';
