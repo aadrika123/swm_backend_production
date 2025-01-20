@@ -154,14 +154,14 @@ trait Helpers
     {
         $ulbs = [];
         if (isset($user_id)) {
-            $sql = "SELECT u.id as ulb_id, um.ulb_name
+            $sql = "SELECT um.id as ulb_id, um.ulb_name
                     FROM wf_ward_users w
                     JOIN users u ON w.user_id = u.id
                     JOIN ulb_masters um ON u.ulb_id = um.id
-                    WHERE w.user_id = $user_id
+                    WHERE w.user_id = :user_id
                       AND w.is_suspended = false
                       AND u.suspended = false
-                    GROUP BY u.id, um.ulb_name";
+                    GROUP BY um.id, um.ulb_name";
 
             $ulbs = DB::select($sql, ['user_id' => $user_id]);
             $ulbarr = array();
