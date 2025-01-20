@@ -3400,4 +3400,92 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
+
+    public function tcReminderList(Request $request)
+    {
+        $todayDate = Carbon::now();
+        $userId    = $request->user()->id;
+        $ulbId     = $this->GetUlbId($userId);
+        $response  = array();
+        try {
+
+            $todayReminderList = $this->CosumerReminder
+                ->whereDate('reminder_date', $todayDate)
+                ->where('user_id', $userId)
+                ->get();
+
+            $consumerList      = collect($todayReminderList)->where('reference_type', 'Consumer');
+            $apartmentList     = collect($todayReminderList)->where('reference_type', 'Apartment');
+
+            $consumerIds      = collect($consumerList)->pluck('reference_id');
+            $apartmentIds     = collect($apartmentList)->pluck('reference_id');
+
+
+            // foreach ($todayReminderList as $reminder) {
+            //     if ($reminder->reference_type == 'Consumer') {
+            //         $consumerList = $this->Consumer->leftjoin('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
+            //             ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
+            //             ->select(DB::raw('swm_consumers.id, ward_no, swm_consumers.name as name, consumer_no as ref_no,address, swm_consumer_categories.name as category, swm_consumer_types.name as type, mobile_no'))
+            //             ->where('swm_consumers.ulb_id', $ulbId)
+            //             ->where('swm_consumers.id', $reminder->reference_id)
+            //             ->where('is_deactivate', 0)
+            //             ->orderBy('id', 'desc')
+            //             ->get();
+            //     }
+            // }
+
+            $apartmentList = $this->Apartment
+                ->select(DB::raw("swm_apartments.id,ward_no, apt_name as name, apt_code as ref_no,apt_address as address, 'Apartment' as category, '' as type, '' as mobile_no,swm_consumer_reminders.remarks"))
+                ->join('swm_consumer_reminders', 'swm_consumer_reminders.reference_id', 'swm_apartments.id')
+                ->whereIn('swm_apartments.id', $apartmentIds)
+                ->where('swm_apartments.ulb_id', $ulbId)
+                ->where('is_deactivate', 0)
+                ->whereDate('reminder_date', $todayDate)
+                ->orderBy('swm_apartments.id', 'desc')
+                ->get();
+
+            $consumerList = $this->Consumer
+                ->select(DB::raw('swm_consumers.id, ward_no, swm_consumers.name as name, consumer_no as ref_no,address, swm_consumer_categories.name as category, swm_consumer_types.name as type, mobile_no,swm_consumer_reminders.remarks'))
+                ->leftjoin('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
+                ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
+                ->join('swm_consumer_reminders', 'swm_consumer_reminders.reference_id', 'swm_consumers.id')
+                ->where('swm_consumers.ulb_id', $ulbId)
+                ->whereIn('swm_consumers.id', $consumerIds)
+                ->where('is_deactivate', 0)
+                ->whereDate('reminder_date', $todayDate)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            $consumerList = $consumerList->merge($apartmentList);
+
+            foreach ($consumerList as $consumer) {
+                if ($consumer->category == 'Apartment')
+                    $demand = $this->GetDemand($this->dbConn, $consumer->id, 'Apartment', $ulbId);
+                else
+                    $demand = $this->GetDemand($this->dbConn, $consumer->id, 'Consumer', $ulbId);
+
+                $con['id']                = $consumer->id;
+                $con['wardNo']            = $consumer->ward_no;
+                $con['consumerName']      = ($consumer->category != 'Apartment') ? $consumer->name : "";
+                $con['consumerNo']        = ($consumer->category != 'Apartment') ? $consumer->ref_no : "";
+                $con['apartmentName']     = ($consumer->category == 'Apartment') ? $consumer->name : "";
+                $con['apartmentCode']     = ($consumer->category == 'Apartment') ? $consumer->ref_no : "";
+                $con['Address']           = $consumer->address;
+                $con['cansumerCategory']  = $consumer->category;
+                $con['cansumerType']      = $consumer->type;
+                $con['mobileNo']          = $consumer->mobile_no;
+                $con['reminder']          = $consumer->remarks;
+                $con['outstandingDemand'] = $demand['demandAmt'];
+                $con['demandFrom']        = $demand['demandFrom'];
+                $con['demandUpto']        = $demand['demandUpto'];
+                $con['paidStatus']        = ($demand['demandAmt'] > 0) ? "Unpaid" : "Paid";
+
+                $response[] = $con;
+            }
+
+            return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
 }

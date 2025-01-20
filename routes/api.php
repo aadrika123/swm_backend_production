@@ -121,6 +121,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/deleteRoute', 'DeleteRoute');
 
         Route::post('swm/createDefaultConsumerApartment', 'DefaultConsumerApartment');
+        Route::post('swm/tcReminderList', 'tcReminderList');
     });
 
     Route::controller(MasterController::class)->group(function () {

@@ -555,7 +555,7 @@ class ConsumerController extends Controller
         return $this->ConResp->addRoute($req);
     }
 
-    
+
     /**
      * get routes 
      *
@@ -566,7 +566,7 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->RouteList($req);
     }
-    
+
     /**
      * get route by id
      *
@@ -599,7 +599,7 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->DeleteRoute($req);
     }
-    
+
     /**
      * payment adjustment list
      *
@@ -634,6 +634,8 @@ class ConsumerController extends Controller
         return $this->ConResp->GetReprintDatav2($req);
     }
 
-    
-    
+    public function tcReminderList(Request $req)
+    {
+        return $this->ConResp->tcReminderList($req);
+    }
 }
