@@ -72,7 +72,8 @@ class MasterRepository implements iMasterRepository
 
         try {
             $responseData = array();
-            $wardPermission = (new UserWardPermission)->setConnection($this->masterConnection)->select(DB::raw("STRING_AGG(ward_id::text, ',') as wards"))
+            $wardPermission = UserWardPermission::select(DB::raw("STRING_AGG(ulb_ward_masters.ward_name::text, ',') as wards"))
+                ->join('ulb_ward_masters', 'ulb_ward_masters.id', 'wf_ward_users.ward_id')
                 ->where('user_id', $userId)
                 ->groupBy('user_id')
                 ->first();
