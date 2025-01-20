@@ -427,7 +427,8 @@ class AuthRepository implements iAuth
             $allUser = ViewUser::where('ulb_id', $ulbId);
 
             if ($req->userId) {
-                $allUser = $allUser->where('id', $req->userId);
+                $allUser = $allUser->where('id', $req->userId)
+                    ->where('ulb_id',  $ulbId);
             }
             $allUser = $allUser->orderBy('id', 'desc')
                 ->get();
