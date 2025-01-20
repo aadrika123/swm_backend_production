@@ -51,7 +51,7 @@ class MasterRepository implements iMasterRepository
             $ulbId = $user->ulb_id;
             $userId = $user->id;
             $responseData = array();
-            $responseData['wardList'] = $this->Ward->where('ulb_id', $ulbId)->orderBy('sqorder', 'asc')->get();
+            $responseData['wardList'] = $this->Ward->where('ulb_id', $ulbId)->orderBy('id', 'asc')->get();
             $responseData['consumerCategory'] = $this->ConsumerCategory->get();
             $responseData['initialDemandDate'] = "01-01-2022";
 
