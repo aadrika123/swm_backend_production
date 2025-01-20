@@ -2849,7 +2849,7 @@ class ConsumerRepository implements iConsumerRepository
                 ->get();
             //print_r($reminders);
             foreach ($reminders as $reminder) {
-                $user = $this->GetUserDetails($reminder->user_id);
+                $user = $this->GetUserDetails($reminder->user_id ,$this->masterConnection);
                 $val['id'] = ($reminder->cid) ? $reminder->cid : $reminder->aid;
                 $val['tcName'] = ($user) ? $user->name : '';
                 $val['wardNo'] = ($reminder->ward_no) ? $reminder->ward_no : $reminder->apt_ward;
