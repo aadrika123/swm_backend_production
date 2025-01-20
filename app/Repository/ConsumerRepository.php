@@ -2190,8 +2190,8 @@ class ConsumerRepository implements iConsumerRepository
 
         try {
             $user = Auth()->user();
-            $ulbId = $user->ulb_id ?? 2;
-            $userId = $user->id ?? 77;
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $conArr = array();
             if (isset($request->wardNo) || isset($request->consumerCategory) || isset($request->consumerType) || isset($ulbId)) {
 
@@ -2246,11 +2246,11 @@ class ConsumerRepository implements iConsumerRepository
                         ->get();
                     $total_tax = 0.00;
                     $demand_upto = '';
-                    $paid_status = 'True';
+                    $paid_status = 'Paid';
                     foreach ($demand as $dmd) {
                         $total_tax += $dmd->total_tax;
                         $demand_upto = $dmd->demand_date;
-                        $paid_status = 'False';
+                        $paid_status = 'Unpaid';
                     }
                     //
 
