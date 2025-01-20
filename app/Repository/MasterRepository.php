@@ -6,7 +6,7 @@ use App\Models\ConsumerCategory;
 use App\Models\Ward;
 use App\Models\Apartment;
 use App\Models\ConsumerType;
-use App\Models\ulb;
+use App\Models\Ulb;
 use App\Models\UserWardPermission;
 use Exception;
 use Illuminate\Http\Request;
@@ -449,7 +449,7 @@ class MasterRepository implements iMasterRepository
         try {
             $responseData = array();
 
-            $ulblist = ulb::where('active_status', 1)->orderBy('id', 'DESC')->get();
+            $ulblist = Ulb::where('active_status', 1)->orderBy('id', 'DESC')->get();
 
             foreach ($ulblist as $ulb) {
                 $val['id'] = $ulb->id;

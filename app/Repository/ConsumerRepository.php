@@ -2100,8 +2100,8 @@ class ConsumerRepository implements iConsumerRepository
     {
         try {
             $user = Auth()->user();
-            $ulbId = $user->ulb_id;
-            $userId = $user->id;
+                $ulbId = $user->ulb_id;
+            $userId = $user->id ;
             $validator = Validator::make($request->all(), [
                 'fromDate' => 'required',
                 'toDate' => 'required',
@@ -2138,19 +2138,23 @@ class ConsumerRepository implements iConsumerRepository
             if (isset($request->wardNo))
                 $whereparam .= " and (a.ward_no='" . $request->wardNo . "' or c.ward_no='" . $request->wardNo . "') ";
 
-            $sql = "SELECT t.consumer_id,t.id as transId, t.apartment_id,reconcile_id,reconcilition_date,transaction_no,transaction_date,payment_mode,cheque_dd_no, cheque_dd_date, bank_name,branch_name, total_payable_amt,bc.remarks,t.user_id 
-            FROM  swm_transactions t
-            LEFT JOIN swm_bank_reconcile bc on bc.transaction_id=t.id
-            LEFT JOIN swm_bank_reconcile_details bd on bd.reconcile_id=bc.id
-            LEFT JOIN swm_transaction_details td on td.transaction_id=t.id
-            LEFT JOIN swm_consumers c on t.consumer_id=c.id
-            LEFT JOIN swm_apartments a on t.apartment_id=a.id
-            WHERE (transaction_date BETWEEN '$From' and '$Upto') and t.paid_status>0 and t.ulb_id=" . $ulbId . " " . $whereparam . " order by t.id desc";
+            $sql = "SELECT t.consumer_id, t.id as trans_id, t.apartment_id, reconcile_id, reconcilition_date, transaction_no, transaction_date, payment_mode, cheque_dd_no, cheque_dd_date, bank_name, branch_name, total_payable_amt, bc.remarks, t.user_id 
+        FROM swm_transactions t
+        LEFT JOIN swm_bank_reconcile bc on bc.transaction_id = t.id
+        LEFT JOIN swm_bank_reconcile_details bd on bd.reconcile_id = bc.id
+        LEFT JOIN swm_transaction_details td on td.transaction_id = t.id
+        LEFT JOIN swm_consumers c on t.consumer_id = c.id
+        LEFT JOIN swm_apartments a on t.apartment_id = a.id
+        WHERE (transaction_date BETWEEN '$From' and '$Upto') 
+        and t.paid_status > 0 
+        and t.ulb_id = $ulbId
+        $whereparam
+        order by t.id desc";
 
             $transactions = DB::connection($this->dbConn)->select($sql);
 
             foreach ($transactions as $transaction) {
-                $collection = $this->Collections->where('transaction_id', $transaction->transId)->where('ulb_id', $ulbId);
+                $collection = $this->Collections->where('transaction_id', $transaction->trans_id)->where('ulb_id', $ulbId);
                 $firstrecord = $collection->orderBy('id', 'asc')->first();
                 $lastrecord = $collection->latest('id')->first();
 
@@ -2161,7 +2165,7 @@ class ConsumerRepository implements iConsumerRepository
                     $refdata = $this->Consumer->where('apartment_id', $transaction->apartment_id)->first();
 
                 $val['wardNo'] = $refdata->ward_no;
-                $val['tranId'] = $transaction->transId;
+                $val['tranId'] = $transaction->trans_id;
                 $val['tranNo'] = $transaction->transaction_no;
                 $val['tranDate'] = Carbon::create($transaction->transaction_date)->format('d-m-Y');
                 $val['paymentMode'] = $transaction->payment_mode;
@@ -2172,7 +2176,7 @@ class ConsumerRepository implements iConsumerRepository
                 $val['tranAmount'] = $transaction->total_payable_amt;
                 $val['clearanceDate'] = ($transaction->reconcilition_date) ? Carbon::create($transaction->reconcilition_date)->format('d-m-Y') : '';
                 $val['remarks'] = $transaction->remarks;
-                $val['tcName'] = ($transaction->user_id) ? $this->GetUserDetails($transaction->user_id)->name : '';
+                $val['tcName'] = ($transaction->user_id) ? $this->GetUserDetails($transaction->user_id, $this->masterConnection)->name : '';
                 $val['verificationType'] = ($transaction->reconcilition_date) ? $verificationType : 'Pending';
                 $val['demandFrom'] = ($firstrecord) ? Carbon::create($firstrecord->payment_from)->format('d-m-Y') : '';
                 $val['demandUpto'] = ($firstrecord) ? Carbon::create($lastrecord->payment_to)->format('d-m-Y') : '';
