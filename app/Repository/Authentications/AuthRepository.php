@@ -417,9 +417,9 @@ class AuthRepository implements iAuth
 
     public function getAllUser(Request $req)
     {
-        // $user = Auth()->user();
-        $ulbId = $user->ulb_id ?? 2;
-        $userId = $user->id ?? 203;
+        $user = Auth()->user();
+        $ulbId = $user->ulb_id;
+        $userId = $user->id;
 
         try {
             $response = array();
