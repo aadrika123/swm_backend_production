@@ -492,7 +492,6 @@ class AuthRepository implements iAuth
                 ->where('ulb_id', $ulbId)
                 ->orderBy('id', 'asc')
                 ->get();
-
             $responseData['ulbList'] = Ulb::get();
             // $responseData['userType'] = UserType::get();
 
@@ -501,6 +500,7 @@ class AuthRepository implements iAuth
             return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }
     }
+
 
 
     public function getTcList(Request $req)

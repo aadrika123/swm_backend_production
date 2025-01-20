@@ -158,7 +158,7 @@ trait Helpers
                     FROM wf_ward_users w
                     JOIN users u ON w.user_id = u.id
                     JOIN ulb_masters um ON u.ulb_id = um.id
-                    WHERE w.user_id = :user_id
+                    WHERE w.user_id = $user_id
                       AND w.is_suspended = false
                       AND u.suspended = false
                     GROUP BY u.id, um.ulb_name";
