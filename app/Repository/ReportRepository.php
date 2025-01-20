@@ -54,52 +54,49 @@ class ReportRepository implements iReportRepository
     }
 
     public function ReportData(Request $request)
-    {   
+    {
         $user = Auth()->user();
         $ulbId = $user->ulb_id;
         $userId = $user->id;
-        try
-        {  
-        $response = array();
-        if (isset($request->fromDate) && isset($request->toDate) && isset($request->reportType)) {
+        try {
             $response = array();
-            // if ($request->reportType == 'dailyCollection')
-            //     $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode);
+            if (isset($request->fromDate) && isset($request->toDate) && isset($request->reportType)) {
+                $response = array();
+                // if ($request->reportType == 'dailyCollection')
+                //     $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode);
 
-            //changed by talib
-            if ($request->reportType == 'dailyCollection')
-                $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->tcId, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode, $ulbId);
-            // changed by talib
+                //changed by talib
+                if ($request->reportType == 'dailyCollection')
+                    $response = $this->DailyCollection($request->fromDate, $request->toDate, $request->tcId, $request->wardNo, $request->consumerCategory, $request->consumerType, $request->apartmentId, $request->mode, $ulbId);
+                // changed by talib
 
-            if ($request->reportType == 'conAdd')
-                $response = $this->ConsumerAdd($request->fromDate, $request->toDate, $ulbId, $request->perPage, $request->page);
+                if ($request->reportType == 'conAdd')
+                    $response = $this->ConsumerAdd($request->fromDate, $request->toDate, $ulbId, $request->perPage, $request->page);
 
-            if ($request->reportType == 'conDect')
-                $response = $this->ConsumerDect($request->fromDate, $request->toDate, $ulbId, $request->perPage, $request->page);
+                if ($request->reportType == 'conDect')
+                    $response = $this->ConsumerDect($request->fromDate, $request->toDate, $ulbId, $request->perPage, $request->page);
 
-            if ($request->reportType == 'tranDect')
-                $response = $this->TransactionDeactivate($request->fromDate, $request->toDate, $request->tcId, $ulbId, $request->perPage, $request->page);
+                if ($request->reportType == 'tranDect')
+                    $response = $this->TransactionDeactivate($request->fromDate, $request->toDate, $request->tcId, $ulbId, $request->perPage, $request->page);
 
-            if ($request->reportType == 'cashVeri')
-                $response = $this->CashVerification($request->fromDate, $request->toDate, $request->tcId, $ulbId, $request->perPage, $request->page);
+                if ($request->reportType == 'cashVeri')
+                    $response = $this->CashVerification($request->fromDate, $request->toDate, $request->tcId, $ulbId, $request->perPage, $request->page);
 
-            if ($request->reportType == 'bankRec')
-                $response = $this->BankReconcilliation($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'bankRec')
+                    $response = $this->BankReconcilliation($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'tcDaily')
-                $response = $this->TcDailyActivity($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'tcDaily')
+                    $response = $this->TcDailyActivity($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            if ($request->reportType == 'tranModeChange')
-                $response = $this->TransactionModeChange($request->fromDate, $request->toDate, $request->tcId, $ulbId);
+                if ($request->reportType == 'tranModeChange')
+                    $response = $this->TransactionModeChange($request->fromDate, $request->toDate, $request->tcId, $ulbId);
 
-            return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
-        } else {
-            return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
-        }
-        }
-        catch (Exception $e) 
-        {
-            return response()->json(['status'=> False, 'data'=>'', 'msg'=> $e], 400);
+                return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
+            } else {
+                return response()->json(['status' => False, 'data' => $response, 'msg' => 'Undefined parameter supply'], 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }
     }
 
@@ -111,7 +108,7 @@ class ReportRepository implements iReportRepository
         $From = Carbon::create($From)->format('Y-m-d');
         $Upto = Carbon::create($Upto)->format('Y-m-d');
 
-        
+
 
         // $allTrans = $this->Transaction->select('swm_transactions.*', 'swm_consumers.ward_no', 'consumer_no', 'name', 'a.apt_code', 'a.apt_name')
         //     ->leftjoin('swm_consumers', 'swm_transactions.consumer_id', '=', 'swm_consumers.id')
@@ -125,30 +122,30 @@ class ReportRepository implements iReportRepository
         $whereParam = "";
         //changed by talib
         if (isset($tcId))
-            $whereParam .= " AND swm_transactions.user_id='".$tcId."'";
-            //$allTrans = $allTrans->where('swm_transactions.user_id', $tcId);
+            $whereParam .= " AND swm_transactions.user_id='" . $tcId . "'";
+        //$allTrans = $allTrans->where('swm_transactions.user_id', $tcId);
         //changed by talib   
         if (isset($wardNo))
-            $whereParam .= " AND swm_consumers.ward_no='".$wardNo."'";
-           // $allTrans = $allTrans->where('swm_consumers.ward_no', $wardNo);
+            $whereParam .= " AND swm_consumers.ward_no='" . $wardNo . "'";
+        // $allTrans = $allTrans->where('swm_consumers.ward_no', $wardNo);
 
         if (isset($consumerCategory))
-            $whereParam .= " AND swm_consumers.consumer_category_id='".$consumerCategory."'";
-            //$allTrans = $allTrans->where('swm_consumers.consumer_category_id', $consumerCategory);
+            $whereParam .= " AND swm_consumers.consumer_category_id='" . $consumerCategory . "'";
+        //$allTrans = $allTrans->where('swm_consumers.consumer_category_id', $consumerCategory);
 
         if (isset($consumertype))
-            $whereParam .= " AND swm_consumers.consumer_type_id='".$consumertype."'";
-           // $allTrans = $allTrans->where('swm_consumers.consumer_type_id', $consumertype);
+            $whereParam .= " AND swm_consumers.consumer_type_id='" . $consumertype . "'";
+        // $allTrans = $allTrans->where('swm_consumers.consumer_type_id', $consumertype);
 
         if (isset($apartmentId))
-            $whereParam .= " AND swm_consumers.apartment_id='".$apartmentId."'";
-            //$allTrans = $allTrans->where('swm_consumers.apartment_id', $apartmentId);
+            $whereParam .= " AND swm_consumers.apartment_id='" . $apartmentId . "'";
+        //$allTrans = $allTrans->where('swm_consumers.apartment_id', $apartmentId);
 
         if (isset($mode))
-            $whereParam .= " AND swm_transactions.payment_mode='".$mode."'";
-            //$allTrans = $allTrans->where('swm_transactions.payment_mode', $mode);
+            $whereParam .= " AND swm_transactions.payment_mode='" . $mode . "'";
+        //$allTrans = $allTrans->where('swm_transactions.payment_mode', $mode);
 
-       // $allTrans = $allTrans->orderBy('transaction_date', 'DESC')->get();
+        // $allTrans = $allTrans->orderBy('transaction_date', 'DESC')->get();
 
         $sql = "SELECT swm_transactions.*,swm_consumers.ward_no, consumer_no,name, a.apt_code, a.apt_name,payment_from,payment_to
                 FROM swm_transactions
@@ -156,9 +153,9 @@ class ReportRepository implements iReportRepository
                 LEFT JOIN swm_apartments as a on swm_transactions.apartment_id=a.id
                 LEFT JOIN swm_transaction_deactivates as td on td.transaction_id=swm_transactions.id
                 LEFT JOIN (select min(payment_from) as payment_from, max(payment_to) as payment_to,transaction_id FROM swm_collections group by transaction_id) cl on cl.transaction_id=swm_transactions.id
-                WHERE (transaction_date between '".$From."' and '".$Upto."') and swm_transactions.ulb_id=".$ulbId." and swm_transactions.paid_status not in(0,3) and td.id is null ".$whereParam."
+                WHERE (transaction_date between '" . $From . "' and '" . $Upto . "') and swm_transactions.ulb_id=" . $ulbId . " and swm_transactions.paid_status not in(0,3) and td.id is null " . $whereParam . "
                 ORDER BY transaction_date DESC";
-        
+
         $allTrans =  DB::connection($this->dbConn)->select($sql);
         $totCollection = 0;
         $totDemand = 0;
@@ -173,7 +170,7 @@ class ReportRepository implements iReportRepository
             //$lastrecord = $this->Collections->where('transaction_id', $trans->id)->orderBy('id', 'desc')->first();
 
 
-            $getuserdata = $this->GetUserDetails($trans->user_id);
+            $getuserdata = $this->GetUserDetails($trans->user_id, $this->dbConn);
             $val['tcName'] = $getuserdata->name;
             $val['mobileNo'] = $getuserdata->contactno;
             $val['designation'] = $getuserdata->user_type;
@@ -233,25 +230,25 @@ class ReportRepository implements iReportRepository
             ->where('is_deactivate', 0)
             ->where('ulb_id', $ulbId)
             ->whereBetween('entry_date', [$From, $Upto]);
-        
+
         $limit = $perPage ? $perPage : 1;
         $page = $pageno && $pageno > 0 ? $pageno : 1;
         $consumers = $consumers->paginate($limit);
         $consumercount = $consumers->total();
-        
+
         foreach ($consumers as $consumer) {
-            $user = $this->GetUserDetails($consumer->user_id);
+            $user = $this->GetUserDetails($consumer->user_id, $this->dbConn);
             $val['entryDate'] = Carbon::create($consumer->entry_date)->format('d-m-Y');
             $val['consumerNo'] = $consumer->consumer_no;
             $val['consumerName'] = $consumer->name;
             $val['entryBy'] = ($user) ? $user->name : "";;
             $response[] = $val;
         }
-        
+
         $extendResponse['details'] = $response;
         $extendResponse['totalCount'] = $consumercount;
-        $extendResponse['numberOfPages'] = ceil($consumercount/$limit);
-        
+        $extendResponse['numberOfPages'] = ceil($consumercount / $limit);
+
         return $extendResponse;
     }
 
@@ -268,14 +265,14 @@ class ReportRepository implements iReportRepository
             ->where('swm_consumer_deactivates.ulb_id', $ulbId)
             ->whereBetween('deactivation_date', [$From, $Upto])
             ->orderBy('swm_consumer_deactivates.id', 'desc');
-        
+
         $limit = $perPage ? $perPage : 1;
         $page = $pageno && $pageno > 0 ? $pageno : 1;
         $consumers = $consumers->paginate($limit);
         $consumercount = $consumers->total();
 
         foreach ($consumers as $consumer) {
-            $user = $this->GetUserDetails($consumer->deactivated_by);
+            $user = $this->GetUserDetails($consumer->deactivated_by, $this->dbConn);
             $val['deactivateDate'] = Carbon::create($consumer->deactivation_date)->format('d-m-Y');
             $val['consumerNo'] = $consumer->consumer_no;
             $val['consumerName'] = $consumer->name;
@@ -286,8 +283,8 @@ class ReportRepository implements iReportRepository
 
         $extendResponse['details'] = $response;
         $extendResponse['totalCount'] = $consumercount;
-        $extendResponse['numberOfPages'] = ceil($consumercount/$limit);
-        
+        $extendResponse['numberOfPages'] = ceil($consumercount / $limit);
+
         return $extendResponse;
     }
 
@@ -309,7 +306,7 @@ class ReportRepository implements iReportRepository
             $transaction = $transaction->where('swm_transactions.user_id', $tcId);
         $transaction = $transaction->whereBetween('date', [$From, $Upto]);
 
-        
+
         $limit = $perPage ? $perPage : 1;
         $page = $pageno && $pageno > 0 ? $pageno : 1;
         $transaction = $transaction->paginate($limit);
@@ -319,21 +316,21 @@ class ReportRepository implements iReportRepository
             $val['deactivateDate'] = Carbon::create($trans->date)->format('d-m-Y');
             $val['transactionDate'] = Carbon::create($trans->transaction_date)->format('d-m-Y');
             $val['amount'] = $trans->total_payable_amt;
-            $val['transactionBy'] = $this->GetUserDetails($trans->transby)->name;
+            $val['transactionBy'] = $this->GetUserDetails($trans->transby, $this->dbConn)->name;
             $val['consumerName'] = $trans->name;
             $val['consumerNo'] = $trans->consumer_no;
             $val['apartmentName'] = $trans->apt_name;
             $val['apartmentCode'] = $trans->apt_code;
             $val['transactionMode'] = $trans->payment_mode;
-            $val['deactivateBy'] = $this->GetUserDetails($trans->user_id)->name;
+            $val['deactivateBy'] = $this->GetUserDetails($trans->user_id, $this->dbConn)->name;
             $val['remarks'] = $trans->remarks;
             $response[] = $val;
         }
 
         $extendResponse['details'] = $response;
         $extendResponse['totalCount'] = $transactionCount;
-        $extendResponse['numberOfPages'] = ceil($transactionCount/$limit);
-        
+        $extendResponse['numberOfPages'] = ceil($transactionCount / $limit);
+
         return $extendResponse;
     }
 
@@ -355,31 +352,31 @@ class ReportRepository implements iReportRepository
             $transaction = $transaction->where('swm_transactions.user_id', $tcId);
         $transaction = $transaction->whereBetween('verify_date', [$From, $Upto]);
 
-        
+
         $limit = $perPage ? $perPage : 1;
         $page = $pageno && $pageno > 0 ? $pageno : 1;
         $transaction = $transaction->paginate($limit);
         $transactionCount = $transaction->total();
-        
+
         foreach ($transaction as $trans) {
             $val['verifiedDate'] = Carbon::create($trans->verify_date)->format('d-m-Y');
             $val['transactionDate'] = Carbon::create($trans->transaction_date)->format('d-m-Y');
             $val['amount'] = $trans->amount;
-            $val['transactionBy'] = $this->GetUserDetails($trans->transby)->name;
+            $val['transactionBy'] = $this->GetUserDetails($trans->transby, $this->dbConn)->name;
             $val['consumerName'] = $trans->name;
             $val['consumerNo'] = $trans->consumer_no;
             $val['apartmentName'] = $trans->apt_name;
             $val['apartmentCode'] = $trans->apt_code;
             $val['transactionMode'] = $trans->payment_mode;
-            $val['verifiedBy'] = $this->GetUserDetails($trans->verify_by)->name;
+            $val['verifiedBy'] = $this->GetUserDetails($trans->verify_by, $this->dbConn)->name;
             $val['remarks'] = $trans->remarks;
             $response[] = $val;
         }
 
         $extendResponse['details'] = $response;
         $extendResponse['totalCount'] = $transactionCount;
-        $extendResponse['numberOfPages'] = ceil($transactionCount/$limit);
-        
+        $extendResponse['numberOfPages'] = ceil($transactionCount / $limit);
+
         return $extendResponse;
     }
 
@@ -405,7 +402,7 @@ class ReportRepository implements iReportRepository
             $val['amount'] = $trans->total_payable_amt;
             $val['transactionNo'] = $trans->transaction_no;
             $val['transactionDate'] = Carbon::create($trans->transaction_date)->format('d-m-Y');
-            $val['transactionBy'] = $this->GetUserDetails($trans->transby)->name;
+            $val['transactionBy'] = $this->GetUserDetails($trans->transby, $this->dbConn)->name;
             $val['consumerName'] = $trans->name;
             $val['consumerNo'] = $trans->consumer_no;
             $val['apartmentName'] = $trans->apt_name;
@@ -415,7 +412,7 @@ class ReportRepository implements iReportRepository
             $val['chequeDate'] = ($trans->cheque_dd_date) ? Carbon::create($trans->cheque_dd_date)->format('d-m-Y') : '';
             $val['bankName'] = $trans->bank_name;
             $val['branchName'] = $trans->branch_name;
-            $val['verifiedBy'] = $this->GetUserDetails($trans->verify_by)->name;
+            $val['verifiedBy'] = $this->GetUserDetails($trans->verify_by, $this->dbConn)->name;
             $val['remarks'] = $trans->remarks;
             $response[] = $val;
         }
@@ -431,7 +428,7 @@ class ReportRepository implements iReportRepository
         $From = Carbon::create($From);
         $Upto = Carbon::create($Upto);
 
-        $tc_details = $this->GetUserDetails($tcId);
+        $tc_details = $this->GetUserDetails($tcId, $this->dbConn);
         $response['tcName'] = ($tc_details) ? $tc_details->name : "";
         $response['mobileNo'] = ($tc_details) ? $tc_details->contactno : "";
         $response['userType'] = ($tc_details) ? $tc_details->user_type : "";
@@ -520,14 +517,14 @@ class ReportRepository implements iReportRepository
             $val['changeDate'] = Carbon::create($trans->date)->format('d-m-Y');
             $val['transactionDate'] = Carbon::create($trans->transaction_date)->format('d-m-Y');
             $val['amount'] = $trans->amount;
-            $val['transactionBy'] = $this->GetUserDetails($trans->transby)->name;
+            $val['transactionBy'] = $this->GetUserDetails($trans->transby, $this->dbConn)->name;
             $val['consumerName'] = $trans->consumer_name;
             $val['consumerNo'] = $trans->consumer_no;
             $val['apartmentName'] = $trans->apt_name;
             $val['apartmentCode'] = $trans->apt_code;
             $val['oldTransactionMode'] = $trans->previous_mode;
             $val['newTransactionMode'] = $trans->current_mode;
-            $val['changeBy'] = $this->GetUserDetails($trans->user_id)->name;
+            $val['changeBy'] = $this->GetUserDetails($trans->user_id, $this->dbConn)->name;
             $response[] = $val;
         }
 
@@ -545,34 +542,32 @@ class ReportRepository implements iReportRepository
             $whereParam = "";
             $whereParam1 = "";
             $whereConsumer = "";
-                
-            if(isset($request->fromDate) && isset($request->toDate))
-            {
+
+            if (isset($request->fromDate) && isset($request->toDate)) {
                 $fromDate = Carbon::create($request->fromDate)->format('Y-m-d');
                 $toDate = Carbon::create($request->toDate)->format('Y-m-d');
-                $whereParam .= " and (DATE(print_datetime) between '".$fromDate."' and '".$toDate."')";
+                $whereParam .= " and (DATE(print_datetime) between '" . $fromDate . "' and '" . $toDate . "')";
             }
-            if(isset($request->tcId))
-                $whereParam .= " and printed_by=".$request->tcId;
+            if (isset($request->tcId))
+                $whereParam .= " and printed_by=" . $request->tcId;
 
-            if(isset($request->wardNo))
-            {
-                $whereParam1 .= " and a.ward_no='".$request->wardNo."'";
-                $whereConsumer .= " and c.ward_no='".$request->wardNo."'";
+            if (isset($request->wardNo)) {
+                $whereParam1 .= " and a.ward_no='" . $request->wardNo . "'";
+                $whereConsumer .= " and c.ward_no='" . $request->wardNo . "'";
             }
-                
-            if(isset($request->category))
-                $whereConsumer .= " and consumer_category_id=".$request->category;
-            
-            if(isset($request->type))
-                $whereConsumer .= " and consumer_type_id=".$request->type;
-            
+
+            if (isset($request->category))
+                $whereConsumer .= " and consumer_category_id=" . $request->category;
+
+            if (isset($request->type))
+                $whereConsumer .= " and consumer_type_id=" . $request->type;
+
             $sql = "SELECT d.*,c.consumer_no,c.name,c.ward_no,c.address,a.apt_code,a.apt_name,a.ward_no as apt_ward_no,a.apt_address from swm_log_demand_receipts d 
-                    LEFT JOIN swm_consumers c on d.consumer_id=c.id ".$whereConsumer."
-                    LEFT JOIN swm_apartments a on d.apartment_id=a.id ".$whereParam1."
-                    WHERE d.ulb_id = " . $ulbId . " ". $whereParam ."
+                    LEFT JOIN swm_consumers c on d.consumer_id=c.id " . $whereConsumer . "
+                    LEFT JOIN swm_apartments a on d.apartment_id=a.id " . $whereParam1 . "
+                    WHERE d.ulb_id = " . $ulbId . " " . $whereParam . "
                     ORDER BY print_datetime desc";
-            
+
             $demandLog = DB::connection($this->dbConn)->select($sql);
 
             foreach ($demandLog as $d) {
@@ -583,7 +578,7 @@ class ReportRepository implements iReportRepository
                 $val['apartmentName'] = ($d->apartment_id > 0) ? $d->apt_name : "";
                 $val['wardNo'] = ($d->ward_no) ? $d->ward_no : $d->apt_ward_no;
                 $val['address'] = ($d->address) ? $d->address : $d->apt_address;
-                $val['printedBy'] = $this->GetUserDetails($d->printed_by)->name??"";
+                $val['printedBy'] = $this->GetUserDetails($d->printed_by, $this->dbConn)->name ?? "";
                 $val['printDateTime'] = date('d-m-Y h:i A', strtotime($d->print_datetime));
                 $val['amount'] = $d->amount;
                 $response[] = $val;
@@ -594,6 +589,4 @@ class ReportRepository implements iReportRepository
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
-
-    
 }

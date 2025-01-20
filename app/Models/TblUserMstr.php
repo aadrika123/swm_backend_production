@@ -10,6 +10,7 @@ class TblUserMstr extends Model
 {
     use HasFactory, HasApiTokens;
     public $timestamps = false;
+    protected $connection = 'pgsql_master';
     protected $table = 'tbl_user_mstr';
 
 }

@@ -195,7 +195,7 @@ class ConsumerRepository implements iConsumerRepository
                     $con['demandFrom'] = $demand_form;
                     $con['demandUpto'] = $demand_upto;
                     $con['paidStatus'] = $paid_status;
-                    $con['applyBy'] = ($consumer->user_id) ? $this->GetUserDetails($consumer->user_id, $this->masterConnection)->name : '';
+                    $con['applyBy'] = ($consumer->user_id);
                     $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
                     $con['status'] = ($consumer->is_deactivate == 0) ? 'Active' : 'Deactive';
                     $con['editApplicable'] = ($trans == 0) ? true : false;
@@ -321,7 +321,7 @@ class ConsumerRepository implements iConsumerRepository
                     $con['holdingNo'] = $apartment->holding_no;
                     $con['address'] = $apartment->apt_address;
                     $con['mobileNo'] = $apartment->contactno;
-                    $con['pinCode'] = $apartment->pinCode;
+                    $con['pinCode'] = $apartment->pincode;
                     $con['activeDemandDetails'] = $demand;
                     $con['monthlyDemand'] = $monthlyDemand;
                     $con['totaldemand'] = $total_tax;
@@ -731,10 +731,8 @@ class ConsumerRepository implements iConsumerRepository
         }
     }
 
-
     public function AnalyticDashboardData(Request $request)
     {
-
         $user = Auth()->user();
         $ulbId = $user->ulb_id;
         $userId = $user->id;
@@ -743,7 +741,6 @@ class ConsumerRepository implements iConsumerRepository
             $response = array();
 
             if (isset($request->fromDate) && isset($request->toDate)) {
-
                 $From = Carbon::create($request->fromDate)->format('Y-m-d');
                 $Upto = Carbon::create($request->toDate)->format('Y-m-d');
 
@@ -757,7 +754,7 @@ class ConsumerRepository implements iConsumerRepository
                 if (isset($request->tcId))
                     $whereParam .= " and user_id=" . $request->tcId;
 
-                //Consumer Details
+                // Consumer Details
                 $sql = "WITH
                 Consumer AS (
                     SELECT count(*) as total_consumer,
@@ -778,17 +775,17 @@ class ConsumerRepository implements iConsumerRepository
                 SELECT total_consumer,residential,commercial,outstanding_amount,adjust_amount
                 FROM  Consumer,TotalDmd,AdjustAmt";
 
-
                 $Report = DB::connection($this->dbConn)->select($sql);
                 if ($Report)
                     $Report = $Report[0];
 
                 // Demand Details
-                $sqldemand = "SELECT YEAR(payment_to) as year, MONTH(payment_to) as month,sum(total_tax) as value  FROM swm_demands 
+                $sqldemand = "SELECT EXTRACT(YEAR FROM payment_to) as year, EXTRACT(MONTH FROM payment_to) as month, sum(total_tax) as value  
+                FROM swm_demands 
                 LEFT JOIN swm_consumers on swm_demands.consumer_id=swm_consumers.id " . $whereParam . "
                 WHERE (payment_to between '" . $From . "' and '" . $Upto . "') 
                 and swm_demands.is_deactivate=0 and swm_demands.ulb_id=" . $ulbId . "
-                GROUP BY YEAR(payment_to), MONTH(payment_to)";
+                GROUP BY EXTRACT(YEAR FROM payment_to), EXTRACT(MONTH FROM payment_to)";
 
                 $totalDmds = DB::connection($this->dbConn)->select($sqldemand);
 
@@ -798,24 +795,24 @@ class ConsumerRepository implements iConsumerRepository
                 }
 
                 // Arrear Details
-                $sqlarrear = "SELECT YEAR(transaction_date) as year, MONTH(transaction_date) as month,sum(total_payable_amt) as value
+                $sqlarrear = "SELECT EXTRACT(YEAR FROM transaction_date) as year, EXTRACT(MONTH FROM transaction_date) as month, sum(total_payable_amt) as value
                 FROM swm_transactions
                 LEFT JOIN swm_transaction_deactivates on swm_transaction_deactivates.transaction_id=swm_transactions.id
                 LEFT JOIN swm_consumers on swm_transactions.consumer_id=swm_consumers.id " . $whereParam . "
                 WHERE swm_transactions.ulb_id=" . $ulbId . " and swm_transaction_deactivates.transaction_id is null and swm_transactions.paid_status!=0 and transaction_date < '" . $From . "'
-                GROUP BY YEAR(transaction_date), MONTH(transaction_date)";
+                GROUP BY EXTRACT(YEAR FROM transaction_date), EXTRACT(MONTH FROM transaction_date)";
 
                 $totalarrears = DB::connection($this->dbConn)->select($sqlarrear);
 
                 // Collection Details
-                $sqlcollection = "SELECT YEAR(transaction_date) as year, MONTH(transaction_date) as month,sum(total_payable_amt) as value,
-                sum(CASE WHEN paid_status = 1 and paid_status !=0 THEN total_payable_amt END) as total_collection,
+                $sqlcollection = "SELECT EXTRACT(YEAR FROM transaction_date) as year, EXTRACT(MONTH FROM transaction_date) as month, sum(total_payable_amt) as value,
+                sum(CASE WHEN paid_status = 1 and paid_status != 0 THEN total_payable_amt END) as total_collection,
                 sum(CASE WHEN paid_status = 2 THEN total_payable_amt END) as total_reconcile_pending_amount
                 FROM swm_transactions
                 LEFT JOIN swm_transaction_deactivates on swm_transaction_deactivates.transaction_id=swm_transactions.id
                 LEFT JOIN swm_consumers on swm_transactions.consumer_id=swm_consumers.id " . $whereParam . "
                 WHERE swm_transactions.ulb_id=" . $ulbId . " and swm_transaction_deactivates.transaction_id is null and swm_transactions.paid_status!=0 and (transaction_date between '" . $From . "' and '" . $Upto . "')
-                GROUP BY YEAR(transaction_date), MONTH(transaction_date)";
+                GROUP BY EXTRACT(YEAR FROM transaction_date), EXTRACT(MONTH FROM transaction_date)";
 
                 $totalcolls = DB::connection($this->dbConn)->select($sqlcollection);
 
@@ -826,16 +823,14 @@ class ConsumerRepository implements iConsumerRepository
                     $total_reconcile += $coll->total_reconcile_pending_amount;
                 }
 
-
-
                 $response['totalDemand'] = $total_demand;
-                $response['outstandingDemand'] = $Report->outstanding_amount;
-                $response['totalConsumer'] = $Report->total_consumer;
+                $response['outstandingDemand'] = $Report->outstanding_amount ?? 0;
+                $response['totalConsumer'] = $Report->total_consumer ?? 0;
                 $response['totalCollection'] = $total_collection;
                 $response['reconcilePending'] = $total_reconcile;
-                $response['adjustmentAmount'] = $Report->adjust_amount;
-                $response['totalResidenstialConsumer'] = $Report->residential;
-                $response['totalCommercialConsumer'] = $Report->commercial;
+                $response['adjustmentAmount'] = $Report->adjust_amount ?? 0;
+                $response['totalResidenstialConsumer'] = $Report->residential ?? 0;
+                $response['totalCommercialConsumer'] = $Report->commercial ?? 0;
                 $response['demand'] = $totalDmds;
                 $response['collection'] = $totalcolls;
                 $response['arrear'] = $totalarrears;
@@ -846,6 +841,7 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
+
 
 
     public function GetTrancation(Request $request)
@@ -1116,9 +1112,9 @@ class ConsumerRepository implements iConsumerRepository
         try {
             if (isset($request->consumerId)) {
 
-                $user = Auth()->user();
-                $ulbId = $user->ulb_id;
-                $userId = $user->id;
+                // $user = Auth()->user();
+                $ulbId = $user->ulb_id ?? 2;
+                $userId = $user->id ?? 203;
                 $consumerId = $request->consumerId;
                 $totalPayableAmt = $request->paidAmount;
                 $transcationDate = date('Y-m-d');
@@ -1277,9 +1273,9 @@ class ConsumerRepository implements iConsumerRepository
 
     public function GeoLocation(Request $request)
     {
-        $user = Auth()->user();
-        $ulbId = $user->ulb_id;
-        $userId = $user->id;
+        // $user = Auth()->user();
+        $ulbId = $user->ulb_id ?? 2;
+        $userId = $user->id ?? 203;
         try {
             $response = array();
             if (isset($request->consumerId) || isset($request->apartmentId)) {
@@ -1312,6 +1308,50 @@ class ConsumerRepository implements iConsumerRepository
             }
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
+
+
+    /**
+     * | Tc Geolocation List
+     */
+    public function tcGeolocationList(Request $req)
+    {
+        $validator = Validator::make(
+            $req->all(),
+            [
+                "fromDate"   => "nullable",
+                "toDate"     => "nullable",
+            ]
+        );
+
+        if ($validator->fails())
+            return response()->json([
+                'status' => false,
+                'msg'    => $validator->errors()->first(),
+                'errors' => "Validation Error"
+            ], 200);
+        try {
+            $perPage = $req->perPage ?? 10;
+            $authUser = auth()->user();
+            $fromDate = $req->fromDate ?? Carbon::now()->format('Y-m-d');
+            $toDate   = $req->toDate   ?? Carbon::now()->format('Y-m-d');
+            $mTblTcTracking = new TblTcTracking();
+
+            $logDetail = $mTblTcTracking->listgeoLocation()
+                ->whereBetween('created_at', [$fromDate . ' 00:00:01', $toDate . ' 23:59:59'])
+                ->where('tbl_tc_trackings.status', true)
+                ->where('tbl_tc_trackings.ulb_id', $authUser->current_ulb);
+
+            if (isset($req->tcId))
+                $logDetail = $logDetail->where('user_id', $req->tcId);
+
+            $logDetail = $logDetail
+                ->paginate($perPage);
+
+            return $this->responseMsgs(true, "Tc Geolocation List", $logDetail);
+        } catch (Exception $e) {
+            return $this->responseMsgs(true,  $e->getMessage(), "");
         }
     }
 
@@ -1801,7 +1841,7 @@ class ConsumerRepository implements iConsumerRepository
         try {
             $user = Auth()->user();
             $ulbId = $user->ulb_id;
-            $userId = $user->id;
+            // $userId = $user->id;
             $response = array();
             if (isset($request->fromDate) && isset($request->toDate)) {
 
@@ -1811,14 +1851,14 @@ class ConsumerRepository implements iConsumerRepository
                 if (isset($request->tcId))
                     $checkTc = " and t.user_id=" . $request->tcId;
 
-                $sql = "SELECT t.user_id, name, user_type, contactno,transaction_date,
+                $sql = "SELECT t.user_id, name, user_type, mobile,transaction_date,
                 sum(CASE when payment_mode = 'Cash' then total_payable_amt else 0 end) as cash_amount,
                 sum(CASE when payment_mode = 'Cheque' then total_payable_amt else 0 end) as cheque_amount,
                 sum(CASE when payment_mode = 'Dd' then total_payable_amt else 0 end) as dd_amount
                 FROM swm_transactions as t
                 --left JOIN swm_transaction_verifications tv on tv.transaction_id=t.id 
-                JOIN db_master.view_user_mstr as u on t.user_id=u.id 
-                WHERE (transaction_date between '$fromDate' and '$toDate') and t.ulb_id=" . $ulbId . " and paid_status!=0 " . $checkTc . " group by t.user_id, name, user_type, contactno,transaction_date";
+                JOIN users as u on t.user_id=u.id 
+                WHERE (transaction_date between '$fromDate' and '$toDate') and t.ulb_id=" . $ulbId . " and paid_status!=0 " . $checkTc . " group by t.user_id, name, user_type, mobile,transaction_date";
 
                 $collections = DB::connection($this->dbConn)->select($sql);
                 foreach ($collections as $collection) {
@@ -1826,7 +1866,7 @@ class ConsumerRepository implements iConsumerRepository
                     $val['tcId'] = $collection->user_id;
                     $val['tcName'] = $collection->name;
                     $val['designation'] = $collection->user_type;
-                    $val['mobileNo'] = $collection->contactno;
+                    $val['mobileNo'] = $collection->mobile;
                     $val['totalAmount'] = $total_amt;
                     $val['cashAmount'] = $collection->cash_amount;
                     $val['chequeAmount'] = $collection->cheque_amount;
@@ -1855,12 +1895,12 @@ class ConsumerRepository implements iConsumerRepository
                 $tcId = $request->tcId;
                 $date = date('Y-m-d', strtotime($request->date));
 
-                $sql = "SELECT c.*,a.apt_name,a.apt_code,a.ward_no as award,t.id as transId,t.transaction_no,t.payment_mode,total_payable_amt,tv.verify_status,tv.verify_by,verify_date,u.name as verify_by
+                $sql = "SELECT c.*,a.apt_name,a.apt_code,a.ward_no as award,t.id as trans_id,t.transaction_no,t.payment_mode,total_payable_amt,tv.verify_status,tv.verify_by,verify_date,u.name as verify_by
                 FROM swm_transactions as t
                 LEFT JOIN swm_consumers c on t.consumer_id=c.id 
                 LEFT JOIN swm_apartments a on t.apartment_id=a.id
                 LEFT JOIN swm_transaction_verifications tv on tv.transaction_id=t.id 
-                LEFT JOIN db_master.view_user_mstr as u on tv.verify_by=u.id
+                LEFT JOIN users as u on tv.verify_by=u.id
                 WHERE t.user_id=" . $tcId . " and transaction_date='$date' and t.ulb_id=" . $ulbId . " order by t.id desc";
 
                 $collections = DB::connection($this->dbConn)->select($sql);
@@ -1870,7 +1910,7 @@ class ConsumerRepository implements iConsumerRepository
                 $totaldd = 0;
                 $transaction = array();
                 foreach ($collections as $collection) {
-                    $coll = $this->Collections->where('transaction_id', $collection->transId);
+                    $coll = $this->Collections->where('transaction_id', $collection->trans_id);
                     $firstrecord = $coll->orderBy('id', 'asc')->first();
                     $lastrecord = $coll->latest('id')->first();
 
@@ -1883,7 +1923,7 @@ class ConsumerRepository implements iConsumerRepository
                     if ($collection->payment_mode == 'Dd')
                         $totaldd += $collection->total_payable_amt;
 
-                    $val['transactionId'] = $collection->transId;
+                    $val['transactionId'] = $collection->trans_id;
                     $val['transactionNo'] = $collection->transaction_no;
                     $val['paymentMode'] = $collection->payment_mode;
                     $val['wardNo'] = ($collection->ward_no) ? $collection->ward_no : $collection->award;
@@ -2150,8 +2190,8 @@ class ConsumerRepository implements iConsumerRepository
 
         try {
             $user = Auth()->user();
-            $ulbId = $user->ulb_id;
-            $userId = $user->id;
+            $ulbId = $user->ulb_id ?? 2;
+            $userId = $user->id ?? 77;
             $conArr = array();
             if (isset($request->wardNo) || isset($request->consumerCategory) || isset($request->consumerType) || isset($ulbId)) {
 
@@ -2165,7 +2205,7 @@ class ConsumerRepository implements iConsumerRepository
                     $consumerList = $consumerList->where('swm_consumers.ward_no', $request->wardNo);
 
                 if (isset($request->consumerNo))
-                    $consumerList = $consumerList->where('swm_consumers.consumer_no', $request->consumerNo);
+                    $consumerList = $consumerList->where('swm_consumers.consumer_no', 'ilike', '%' . $request->consumerNo . '%');
 
                 if (isset($request->consumerCategory))
                     $consumerList = $consumerList->where('swm_consumers.consumer_category_id', $request->consumerCategory);
@@ -2173,7 +2213,7 @@ class ConsumerRepository implements iConsumerRepository
                 if (isset($request->consumerType))
                     $consumerList = $consumerList->where('swm_consumers.consumer_type_id', $request->consumerType);
 
-                $consumerList = $consumerList->where('swm_consumers.ulb_id', $ulbId)->where('swm_consumers.is_deactivate', 0);
+                $consumerList = $consumerList->where('swm_consumers.ulb_id', 2)->where('swm_consumers.is_deactivate', 0);
 
                 if (isset($request->buildingType) && $request->buildingType == 'flat') {
                     $consumerList = $consumerList->where('swm_consumers.apartment_id', '>', '0');
@@ -2235,7 +2275,7 @@ class ConsumerRepository implements iConsumerRepository
                     $con['mobileNo'] = $consumer->mobile_no;
                     $con['totalDemand'] = $total_tax;
                     $con['demandUpto'] = $demand_upto;
-                    $con['applyBy'] = ($consumer->user_id) ? $this->GetUserDetails($consumer->user_id)->name : '';
+                    $con['applyBy'] = ($consumer->user_id) ? $this->GetUserDetails($consumer->user_id, $this->dbConn)->name : '';
                     $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
                     $con['status'] = ($consumer->is_deactivate == 0) ? 'Active' : 'Deactive';
                     $conArr[] = $con;
@@ -2854,7 +2894,7 @@ class ConsumerRepository implements iConsumerRepository
                     $lastrecord = $collection->latest('id')->first();
 
 
-                    $getuserdata = $this->GetUserDetails($trans->user_id);
+                    $getuserdata = $this->GetUserDetails($trans->user_id, $this->masterConnection);
                     $val['id'] = ($trans->consumer_id) ? $trans->consumer_id : $trans->apartment_id;
 
                     $val['wardNo'] = ($trans->ward_no) ? $trans->ward_no : $trans->apt_ward;
@@ -3270,6 +3310,88 @@ class ConsumerRepository implements iConsumerRepository
                 $msg = "Apartment already exist.";
             }
             return response()->json(['status' => true, 'data' => array(), 'msg' => $msg], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
+
+    public function GetReprintDatav2(Request $request)
+    {
+        try {
+
+            // $ulbId = $this->GetUlbIds($request->userId);
+            $ulbId = $request->ulbId ?? 11;
+            $dbReceipt = "juidco_swm";
+            $response = array();
+            if (isset($request->transactionNo)) {
+                $transactionNo = $request->transactionNo;
+
+                $sql = "SELECT t.transaction_no,t.transaction_date,c.ward_no,c.name,c.address,a.apt_name, a.apt_code, c.consumer_no, a.apt_address, a.ward_no as apt_ward, 
+                t.total_payable_amt, cl.payment_from, cl.payment_to, t.payment_mode,td.bank_name as b_name, td.branch_name, td.cheque_dd_no, td.cheque_dd_date, 
+                t.total_demand_amt, t.total_remaining_amt, t.stampdate, t.apartment_id, ct.rate,cc.name as consumer_category,t.user_id, c.holding_no,c.mobile_no,ct.name as consumer_type,c.license_no
+                FROM swm_transactions t
+                left JOIN swm_consumers c on t.consumer_id=c.id
+                LEFT JOIN swm_consumer_types ct on c.consumer_type_id=ct.id
+                LEFT JOIN swm_consumer_categories cc on c.consumer_category_id=cc.id
+                LEFT JOIN swm_apartments a on t.apartment_id=a.id
+                JOIN (
+                    SELECT min(payment_from) as payment_from, max(payment_to) as payment_to,
+                    transaction_id 
+                    FROM swm_collections 
+                    GROUP BY transaction_id
+                ) cl on cl.transaction_id=t.id 
+                LEFT JOIN swm_transaction_details td on td.transaction_id=t.id
+                WHERE t.transaction_no='" . $transactionNo . "'";
+                DB::connection($this->dbConn)->enableQueryLog();
+                $transaction = DB::connection($this->dbConn)->select($sql);
+
+                if ($transaction) {
+                    $transaction = $transaction[0];
+                    $consumerCount = 0;
+                    $monthlyRate = $transaction->rate;
+                    if ($transaction->apartment_id) {
+                        $consumer = $this->Consumer->join('swm_consumer_types as ct', 'ct.id', '=', 'swm_consumers.consumer_type_id')
+                            ->where('apartment_id', $transaction->apartment_id)
+                            ->where('ulb_id', $ulbId)
+                            ->where('is_deactivate', 0);
+                        $consumerCount = $consumer->count();
+                        $monthlyRate = $consumer->sum('rate');
+                    }
+                    $getTc = $this->GetUserDetails($transaction->user_id, $this->masterConnection);
+
+                    $response['transactionDate'] = Carbon::create($transaction->transaction_date)->format('Y-m-d');
+                    $response['transactionTime'] = Carbon::create($transaction->stampdate)->format('h:i A');
+                    $response['transactionNo'] = $transaction->transaction_no;
+                    $response['consumerName'] = $transaction->name;
+                    $response['consumerNo'] = $transaction->consumer_no;
+                    $response['mobileNo'] = $transaction->mobile_no;
+                    $response['consumerCategory'] = ($transaction->consumer_category) ? $transaction->consumer_category : 'RESIDENTIAL';
+                    $response['consumerType'] = $transaction->consumer_type;
+                    $response['licenseNo'] = isset($transaction->license_no) ? $transaction->license_no : '';
+                    $response['apartmentName'] = $transaction->apt_name;
+                    $response['apartmentCode'] = $transaction->apt_code;
+                    $response['ReceiptWard'] = ($transaction->apt_ward) ? $transaction->apt_ward : $transaction->ward_no;
+                    $response['holdingNo'] = $transaction->holding_no;
+                    $response['address'] = ($transaction->apt_address) ? $transaction->apt_address : $transaction->address;
+                    $response['paidFrom'] = $transaction->payment_from;
+                    $response['paidUpto'] = $transaction->payment_to;
+                    $response['paymentMode'] = $transaction->payment_mode;
+                    $response['bankNameReceipt'] = $transaction->b_name;
+                    $response['branchName'] = $transaction->branch_name;
+                    $response['chequeNo'] = $transaction->cheque_dd_no;
+                    $response['chequeDate'] = $transaction->cheque_dd_date;
+                    $response['noOfFlats'] = $consumerCount;
+                    $response['monthlyRate'] = $monthlyRate;
+                    $response['demandAmount'] = ($transaction->total_demand_amt) ? $transaction->total_demand_amt : 0;
+                    $response['paidAmount'] = ($transaction->total_payable_amt) ? $transaction->total_payable_amt : 0;
+                    $response['remainingAmount'] = ($transaction->total_remaining_amt) ? $transaction->total_remaining_amt : 0;
+                    $response['tcName'] = $getTc->name ?? "";
+                    $response['tcMobile'] = $getTc->contactno ?? "";
+                }
+            }
+            $response = array_merge($response, $this->GetUlbData($ulbId));
+
+            return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }

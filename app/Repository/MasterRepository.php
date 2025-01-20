@@ -69,25 +69,25 @@ class MasterRepository implements iMasterRepository
         $userId = $user->id;
 
 
-        
+
         try {
             $responseData = array();
             $wardPermission = (new UserWardPermission)->setConnection($this->masterConnection)->select(DB::raw("STRING_AGG(ward_id::text, ',') as wards"))
-                                                ->where('user_id', $userId)
-                                                ->groupBy('user_id')
-                                                ->first();
-            
-            if (isset($request->wardNo) && $request->wardNo !="") {
+                ->where('user_id', $userId)
+                ->groupBy('user_id')
+                ->first();
+
+            if (isset($request->wardNo) && $request->wardNo != "") {
                 $aptlist = $this->Apartment
-                            ->where('ward_no', $request->wardNo)
-                            ->where('swm_apartments.ulb_id', $ulbId)
-                            ->orderBy('id', 'DESC')
-                            ->get();
-            } else{
+                    ->where('ward_no', $request->wardNo)
+                    ->where('swm_apartments.ulb_id', $ulbId)
+                    ->orderBy('id', 'DESC')
+                    ->get();
+            } else {
                 $aptlist = $this->Apartment->select('swm_apartments.*')
-                            ->where('swm_apartments.ulb_id', $ulbId)
-                            ->whereIn('ward_no', explode(',', $wardPermission->wards))
-                            ->orderBy('swm_apartments.id', 'DESC')->get();
+                    ->where('swm_apartments.ulb_id', $ulbId)
+                    ->whereIn('ward_no', explode(',', $wardPermission->wards))
+                    ->orderBy('swm_apartments.id', 'DESC')->get();
             }
             $responseData['apartmentList'] = $aptlist;
             return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
@@ -449,7 +449,7 @@ class MasterRepository implements iMasterRepository
         try {
             $responseData = array();
 
-            $ulblist = ulb::where('status', 1)->orderBy('id', 'DESC')->get();
+            $ulblist = ulb::where('active_status', 1)->orderBy('id', 'DESC')->get();
 
             foreach ($ulblist as $ulb) {
                 $val['id'] = $ulb->id;
@@ -574,7 +574,8 @@ class MasterRepository implements iMasterRepository
 
     public function WardList(Request $request)
     {
-        $userId = $request->user()->id;
+
+        $userId = Auth()->user()->id;
         $ulbId = $this->GetUlbId($userId);
         try {
             $responseData = array();
@@ -624,7 +625,7 @@ class MasterRepository implements iMasterRepository
 
     public function WardUpdate(Request $request)
     {
-        
+
         try {
             # updated by sam
             $user = Auth()->user();

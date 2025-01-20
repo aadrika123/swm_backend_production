@@ -116,10 +116,9 @@ class AuthRepository implements iAuth
         try {
             $response = array();
             if ($req->userId) {
-                $lastLogin =(new ViewUser)->setConnection($this->masterConnection)->where('id', $req->userId)->where('suspended', false)->first();
+                $lastLogin = (new ViewUser)->setConnection($this->masterConnection)->where('id', $req->userId)->where('suspended', false)->first();
 
-                if($lastLogin)
-                {
+                if ($lastLogin) {
                     $response['id'] = $lastLogin->id;
                     $response['userId'] = $lastLogin->user_name;
                     $response['userName'] = $lastLogin->name;
@@ -417,7 +416,7 @@ class AuthRepository implements iAuth
         $user = Auth()->user();
         $ulbId = $user->ulb_id;
         $userId = $user->id;
-        
+
         try {
             $response = array();
 
@@ -435,7 +434,7 @@ class AuthRepository implements iAuth
                 $val['designation'] = $user->user_type;
                 $val['mobileNo'] = $user->contactno;
                 $val['address'] = $user->address;
-                $val['image'] = $user->photo_relative_path.'/'.$user->photo;
+                $val['image'] = $user->photo_relative_path . '/' . $user->photo;
                 $val['lastVisitedTime'] = $user->login_time;
                 $val['lastVisitedDate'] = Carbon::create($user->login_date)->format('d-m-Y');
                 $val['lastIpAddress'] = $user->ip_address;
@@ -499,19 +498,20 @@ class AuthRepository implements iAuth
     public function getTcList(Request $req)
     {
         try {
+
             $response = array();
             $whereparam = '';
             $user = Auth()->user();
-            $ulbId = $user->ulb_id??2;
-            $userId = $user->id ?? 72;
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
 
             if (isset($ulbId)) {
-                $whereparam = ' and uw.ulb_id=' . $ulbId;
+                $whereparam = ' and users.ulb_id=' . $ulbId;
             }
 
-            $sql = "SELECT distinct name,id,mobile,address FROM users";
-            // left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
-            // where user_type='Tax Collector' " . $whereparam. " order by name asc";
+            $sql = "SELECT distinct name,id,mobile,ulb_id,address FROM users
+            -- // -- // left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
+            where user_type='Tc' " . $whereparam . " order by name asc";
             $allUser = DB::select($sql);
 
 
@@ -520,6 +520,7 @@ class AuthRepository implements iAuth
                 $val['tcName'] = $user->name;
                 $val['mobileNo'] = $user->mobile;
                 $val['address'] = $user->address;
+                $val['ulbId'] = $user->ulb_id;
                 $response[] = $val;
             }
             return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
@@ -579,8 +580,7 @@ class AuthRepository implements iAuth
             $menu->save();
 
             if ($menu->id) {
-                foreach($req->permissionTo as $userType)
-                {
+                foreach ($req->permissionTo as $userType) {
                     $permission = new MenuPermission();
 
                     $permission->menu_id = $menu->id;
@@ -605,18 +605,18 @@ class AuthRepository implements iAuth
         try {
             $responseData = array();
             $whereParam = "";
-            if(isset($request->menuId))
-                $whereParam = "WHERE m.id=".$request->menuId;
-            
+            if (isset($request->menuId))
+                $whereParam = "WHERE m.id=" . $request->menuId;
+
 
             $sql = "SELECT m.id,m.menu_name,m.file_path,m1.menu_name as parent_menu,m.menu_order,GROUP_CONCAT(user_type SEPARATOR ', ') as user_type, GROUP_CONCAT(short_name SEPARATOR ', ') as short_name FROM tbl_menu_mtr m
                 LEFT JOIN tbl_menu_mtr m1 on m.under_menu_id=m1.id
                 JOIN (SELECT user_type,short_name,menu_id FROM tbl_menu_permission p
                     JOIN tbl_user_type ut on p.user_type_id = ut.id
-                    WHERE status=1) p on p.menu_id=m.id ". $whereParam ."
+                    WHERE status=1) p on p.menu_id=m.id " . $whereParam . "
                 GROUP BY m.id,m.menu_name,m.file_path,m1.menu_name,m.menu_order
                 ORDER BY m.menu_order ASC";
-            
+
             $menuList = DB::select($sql);
 
             foreach ($menuList as $menu) {
@@ -664,10 +664,9 @@ class AuthRepository implements iAuth
 
             if ($req->menuId && $req->permissionTo) {
                 MenuPermission::where('menu_id', $req->menuId)
-                                ->where('status', 1)
-                                ->update(['status' => 0]);
-                foreach($req->permissionTo as $userType)
-                {
+                    ->where('status', 1)
+                    ->update(['status' => 0]);
+                foreach ($req->permissionTo as $userType) {
                     $permission = new MenuPermission();
 
                     $permission->menu_id = $menu->id;
@@ -692,23 +691,21 @@ class AuthRepository implements iAuth
         try {
             $responseData = array();
 
-            if(isset($request->userType))
-            {
+            if (isset($request->userType)) {
                 $sql = "SELECT m.id,m.menu_name,m.file_path,m.menu_order FROM tbl_menu_mtr m
                     JOIN tbl_menu_permission p on p.menu_id=m.id 
-                    WHERE p.status=1 and (m.under_menu_id is null or m.under_menu_id = 0) AND p.user_type_id=". $request->userType ."
+                    WHERE p.status=1 and (m.under_menu_id is null or m.under_menu_id = 0) AND p.user_type_id=" . $request->userType . "
                     ORDER BY m.menu_order ASC";
-                
+
                 $menuList = DB::select($sql);
 
                 foreach ($menuList as $menu) {
 
                     $childMenus = MenuMaster::where('under_menu_id', $menu->id)
-                                            ->orderBy('menu_order', 'ASC')
-                                            ->get();
+                        ->orderBy('menu_order', 'ASC')
+                        ->get();
                     $responseChild = array();
-                    foreach($childMenus as $childMenu)
-                    {
+                    foreach ($childMenus as $childMenu) {
                         $val['id'] = $childMenu->id;
                         $val['MenuName'] = $childMenu->menu_name;
                         $val['menuPath'] = $childMenu->file_path;
@@ -726,6 +723,46 @@ class AuthRepository implements iAuth
 
                 return response()->json(['status' => True, 'data' => $responseData, 'msg' => ''], 200);
             }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+        }
+    }
+
+    public function getUser(Request $req)
+    {
+        try {
+            $user = auth()->user();
+            $permittedWards = [];
+            $response       = [];
+
+            $routList = collect();
+            if ($user->id) {
+                $lastLogin = ViewUser::select('users.*', 'ulb_masters.ulb_name', 'wf_roles.id as wfRoleId', 'wf_roles.role_name')
+                    ->where('users.id', $user->id)
+                    ->join('ulb_masters', 'ulb_masters.id', '=', 'users.ulb_id')
+                    ->join('wf_roleusermaps', 'wf_roleusermaps.user_id', '=', 'users.id')
+                    ->join('wf_roles', 'wf_roles.id', '=', 'wf_roleusermaps.wf_role_id')
+                    ->where('suspended', false)
+                    ->first();
+                $response['id'] = $lastLogin->id;
+                // $response['userId'] = $lastLogin->user_name;
+                $response['userName'] = $lastLogin->name;
+                $response['designation'] = $lastLogin->user_type;
+                $response['mobileNo'] = $lastLogin->mobile;
+                $response['address'] = $lastLogin->address;
+                $response['image'] = $lastLogin->photo_path;
+                $response['lastVisitedTime'] = $lastLogin->login_time;
+                $response['lastVisitedDate'] = date('d-m-Y', $lastLogin->login_date);
+                $response['lastIpAddress'] = $lastLogin->ip_address;
+                $response['role'] = $lastLogin->user_type;
+                $response['userTypeId'] = $lastLogin->user_type_id ?? $lastLogin->wfRoleId;
+                $response["routes"]        = $routList;
+                $response["permittedWard"] = $permittedWards;
+                $response["ulbName"] = $lastLogin->ulb_name;
+                $response["roleId"] = $lastLogin->wfRoleId;
+                $response["roleName"] = $lastLogin->role_name;
+            }
+            return response()->json(['status' => True, 'data' => $response, 'msg' => 'Fetch SuccessFully'], 200);
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
         }

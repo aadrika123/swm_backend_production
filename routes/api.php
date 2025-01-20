@@ -26,14 +26,14 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
     // });
     Route::controller(AuthController::class)->group(function () {
         Route::get('swm/getHomePageData/{userId}', 'GetHomePageData');  // Route for get last Login Details
-    
+
     });
 
     Route::controller(AuthController::class)->group(function () {
         //Route::post('swm/updateUser', 'UpdateUser');                    // Route for update user
         Route::post('swm/getTcList', 'getTcList');                      // Route for get tc list ulb wise
         // Menu Permission
-        Route::post('swm/postMenuPermission', 'MenuPermission');            
+        Route::post('swm/postMenuPermission', 'MenuPermission');
         Route::get('swm/getMenuPermissionList', 'MenuPermissionList');
         Route::post('swm/getMenuPermissionById', 'MenuPermissionList');
         Route::post('swm/updateMenuPermission', 'UpdateMenuPermission');
@@ -44,6 +44,8 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/getAlluser', 'getAllUser');                    // Route for get all user
         //Route::post('swm/createUser', 'CreateUser');                    // Route for create user
         Route::post('swm/getUserFormDate', 'getUserFormDate');          // Route for user form data
+
+        Route::get('swm/get-user', 'getUser');
         # ended here                  
     });
 
@@ -69,11 +71,11 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::get('swm/searchTransaction/{transactionNo}', 'searchTransaction');
         Route::post('swm/transactionDeactivate', 'transactionDeactivate');
         Route::post('swm/postRenterForn', 'RenterForm');
-        
+
         // Geo Tagging
         Route::post('swm/postGeoTagging', 'AddGeoTagging');
         Route::post('swm/getGeoLocation', 'GetGeoLocation');
-        
+
         Route::post('swm/getAllTransaction', 'GetAllTransaction');
         Route::post('swm/getCollectionSummary', 'AllCollectionSummary');
         Route::post('swm/postEditConsumerDetail', 'UpdateConsumerDetails');
@@ -101,16 +103,16 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         // Payment adjustments
         Route::post('swm/paymentAdjustment', 'PaymentAdjustment');
         Route::get('swm/getPaymentAdjustmentList', 'PaymentAdjustmentList');
-        
+
 
         Route::post('swm/consumerListByWardNo', 'ConsumerOrApartmentList');
         Route::post('swm/getReminderList', 'GetReminderList');
         Route::post('swm/getConsumerPastTransactions', 'ConsumerPastTransactions');
-       
+
         // For Complain
         Route::post('swm/postTcComplain', 'TcComplain');
         Route::post('swm/getComplainList', 'getComplainList');
-        
+
         // For Routes
         Route::post('swm/postNewRoute', 'addRoute');
         Route::post('swm/getRouteList', 'RouteList');
@@ -149,15 +151,21 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
 
         Route::post('swm/getWardList', 'WardList');
         Route::post('swm/postWardAdd', 'WardAdd');
-        Route::put('swm/postWardUpdate', 'WardUpdate');
-        Route::put('swm/getWardListById', 'WardById');
+        Route::post('swm/postWardUpdate', 'WardUpdate');
+        Route::post('swm/getWardListById', 'WardById');
     });
 
 
     Route::controller(ReportController::class)->group(function () {
         Route::post('swm/getReportData', 'GetReportData');              // Route for get all type of report
         Route::post('swm/getDemandReceiptData', 'GetDemandReceiptData'); // Route for get all demand receipt report
+
+        Route::post('swm/list-tc-geolocation', 'tcGeolocationList');
     });
+});
+Route::controller(ConsumerController::class)->group(function () {
+    // Route::post('postPayment', 'MakePayment');
+    Route::post('swm/getReprintData-v2', 'getReprintDatav2');
 });
 
 

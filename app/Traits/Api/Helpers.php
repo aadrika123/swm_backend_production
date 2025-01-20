@@ -192,7 +192,7 @@ trait Helpers
     {
         $default = 21;
         if (isset($userId) && $userId <> '') {
-            $userPerm = TblUserMstr::select('current_ulb')
+            $userPerm = ViewUser::select('ulb_id')
                 ->where('id', $userId)
                 ->first();
             return $userPerm->current_ulb;

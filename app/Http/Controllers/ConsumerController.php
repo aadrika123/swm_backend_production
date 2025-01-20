@@ -623,6 +623,17 @@ class ConsumerController extends Controller
         return $this->ConResp->DefaultConsumerAdd($req);
     }
 
+    /**
+     * Payment receipt date.
+     *
+     * @param  $request
+     * @return ConsumerRepository->GetReprintDatav2
+     */
+    public function getReprintDatav2(Request $req)
+    {
+        return $this->ConResp->GetReprintDatav2($req);
+    }
+
     
     
 }
