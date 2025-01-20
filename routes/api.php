@@ -136,7 +136,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
 
         Route::get('swm/getConsumerCategoryList', 'getConsumerCategoryList');
         Route::post('swm/postConsumerCategoryAdd', 'ConsumerCategoryAdd');
-        Route::put('swm/postConsumerCategoryUpdate', 'ConsumerCategoryUpdate');
+        Route::post('swm/postConsumerCategoryUpdate', 'ConsumerCategoryUpdate');
         Route::post('swm/getConsumerCategoryById', 'ConsumerCategoryById');
 
         Route::post('swm/getConsumerTypeList', 'ConsumerTypeList');
