@@ -34,6 +34,7 @@ class AuthRepository implements iAuth
     protected $dbConn;
     protected $Ward;
     protected $masterConnection;
+    protected $ulbMaster;
 
     public function __construct(Request $request)
     {
@@ -41,6 +42,9 @@ class AuthRepository implements iAuth
         $this->masterConnection = DB::connection('pgsql_master')->getName();
 
         $this->Ward = new Ward($this->dbConn);
+
+        // $this->ulbMaster = new UlbMaster($this->masterConnection);
+
     }
     // public function login(Request $req)
     // {
@@ -413,9 +417,9 @@ class AuthRepository implements iAuth
 
     public function getAllUser(Request $req)
     {
-        $user = Auth()->user();
-        $ulbId = $user->ulb_id;
-        $userId = $user->id;
+        // $user = Auth()->user();
+        $ulbId = $user->ulb_id ?? 2;
+        $userId = $user->id ?? 203;
 
         try {
             $response = array();

@@ -128,7 +128,7 @@ trait Helpers
             where c.apartment_id=" . $responseId . " and d.paid_status=0 and d.is_deactivate=0 and d.ulb_id=" . $ulbId . " group by d.consumer_id,d.total_tax,d.payment_to,d.payment_from";
 
             $dmds = DB::connection($dbConn)->select($sql);
-            
+
             $i = 0;
             foreach ($dmds as $d) {
 
@@ -148,28 +148,35 @@ trait Helpers
         return $response;
     }
 
-    
+
 
     public function GetUlbs($user_id)
     {
+        $ulbs = [];
         if (isset($user_id)) {
-            $sql = "SELECT w.ulb_id,ulb_name,ulb FROM tbl_user_ward w
-            JOIN tbl_ulb_list u on w.ulb_id=u.id
-            WHERE user_id=" . $user_id . " and w.stts=1 and u.status=1 group by w.ulb_id, ulb_name,ulb";
+            $sql = "SELECT u.id as ulb_id, um.ulb_name
+                    FROM wf_ward_users w
+                    JOIN users u ON w.user_id = u.id
+                    JOIN ulb_masters um ON u.ulb_id = um.id
+                    WHERE w.user_id = :user_id
+                      AND w.is_suspended = false
+                      AND u.suspended = false
+                    GROUP BY u.id, um.ulb_name";
 
-            $ulbs = DB::select($sql);
+            $ulbs = DB::select($sql, ['user_id' => $user_id]);
             $ulbarr = array();
             if ($ulbs) {
                 foreach ($ulbs as $u) {
                     $val['ulbId'] = $u->ulb_id;
                     $val['ulbName'] = $u->ulb_name;
-                    $val['ulb'] = $u->ulb;
+                    // $val['ulb'] = $u->ulb;
                     $ulbarr[] = $val;
                 }
             }
             return $ulbarr;
         }
     }
+
 
 
 
@@ -217,7 +224,7 @@ trait Helpers
                 $ulbData['accountName'] = $ulb->account_name;
                 $ulbData['accountNo'] = $ulb->account_no;
                 $ulbData['ifscNo'] = $ulb->ifsc_no;
-                $ulbData['logo'] = "uploads/logo/".$ulb->logo;
+                $ulbData['logo'] = "uploads/logo/" . $ulb->logo;
             }
             return $ulbData;
         }

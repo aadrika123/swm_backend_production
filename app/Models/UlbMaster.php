@@ -9,18 +9,18 @@ use Illuminate\Support\Facades\DB;
 class UlbMaster extends Model
 {
     use HasFactory;
-    protected $connection= 'pgsql_master';
+    protected $connection = 'pgsql_master';
 
-    public function GetUlbsWithWard($user_id, $Ward)
+    public function GetUlbsWithWard($user_id)
     {
         if (isset($user_id)) {
             $ulbs = Self::select('ulb_ward_masters.ulb_id', 'ulb_masters.ulb_name')
-                    ->join('ulb_ward_masters', 'ulb_ward_masters.ulb_id', '=', 'ulb_masters.id')
-                    ->join('wf_ward_users', 'wf_ward_users.ward_id', '=', 'ulb_ward_masters.id')
-                    ->where('wf_ward_users.user_id', $user_id)
-                    ->where('wf_ward_users.is_suspended', false)
-                    ->groupBy(['ulb_masters.ulb_name', 'ulb_ward_masters.ulb_id'])
-                    ->get();
+                ->join('ulb_ward_masters', 'ulb_ward_masters.ulb_id', '=', 'ulb_masters.id')
+                ->join('wf_ward_users', 'wf_ward_users.ward_id', '=', 'ulb_ward_masters.id')
+                ->where('wf_ward_users.user_id', $user_id)
+                ->where('wf_ward_users.is_suspended', false)
+                ->groupBy(['ulb_masters.ulb_name', 'ulb_ward_masters.ulb_id'])
+                ->get();
 
             $ulbarr = array();
             if ($ulbs) {
@@ -32,7 +32,7 @@ class UlbMaster extends Model
                     $ulbarr[] = $val;
                 }
             }
-            
+
             return $ulbarr;
         }
     }
