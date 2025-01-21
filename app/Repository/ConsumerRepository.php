@@ -848,9 +848,9 @@ class ConsumerRepository implements iConsumerRepository
         $currentYear   = Carbon::now()->format('Y');
         $startOfMonth  = Carbon::parse($request->fromDate)->startOfMonth()->toDateString();
         $endOfMonth    = Carbon::parse($request->toDate)->endOfMonth()->toDateString();
-        // $user   = Auth()->user();
-        $ulbId  = $user->ulb_id ?? 2;
-        $userId = $user->id ?? 203;
+        $user   = Auth()->user();
+        $ulbId  = $user->ulb_id;
+        $userId = $user->id;
 
         try {
             $response = array();
