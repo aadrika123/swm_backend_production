@@ -1237,8 +1237,8 @@ class ConsumerRepository implements iConsumerRepository
 
             $validator = Validator::make($request->all(), [
                 'longitude' => 'required',
-                'latitude' => 'required',
-                'photo' => 'required|mimes:jpeg,png,jpg,png,pdf|max:1024',
+                'latitude' => 'required'
+                // 'photo' => 'required|mimes:jpeg,png,jpg,png,pdf|max:1024',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status' => False, 'msg' => $validator->messages()]);
@@ -1252,12 +1252,12 @@ class ConsumerRepository implements iConsumerRepository
                 $geoTagging->consumer_id = ($request->consumerId) ? $request->consumerId : null;
                 $geoTagging->apartment_id = ($request->apartmentId) ? $request->apartmentId : null;
                 $geoTagging->user_id = $userId;
-                if (!empty($request->photo)) {
-                    $filePath = md5($refId) . '.' . $request->photo->extension();
-                    $request->photo->move(public_path('uploads'), $filePath);
+                // if (!empty($request->photo)) {
+                //     $filePath = md5($refId) . '.' . $request->photo->extension();
+                //     $request->photo->move(public_path('uploads'), $filePath);
 
-                    $geoTagging->file_name = $filePath;
-                }
+                //     $geoTagging->file_name = $filePath;
+                // }
 
                 $geoTagging->save();
 
