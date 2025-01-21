@@ -848,9 +848,9 @@ class ConsumerRepository implements iConsumerRepository
         $currentYear   = Carbon::now()->format('Y');
         $startOfMonth  = Carbon::parse($request->fromDate)->startOfMonth()->toDateString();
         $endOfMonth    = Carbon::parse($request->toDate)->endOfMonth()->toDateString();
-        $user   = Auth()->user();
-        $ulbId  = $user->ulb_id;
-        $userId = $user->id;
+        // $user   = Auth()->user();
+        $ulbId  = $user->ulb_id ?? 2;
+        $userId = $user->id ?? 203;
 
         try {
             $response = array();
@@ -860,7 +860,8 @@ class ConsumerRepository implements iConsumerRepository
                           count(CASE WHEN consumer_category_id = 1 THEN id end) as residential,
                           count(CASE WHEN consumer_category_id != 1 THEN id end) as commercial
                     FROM swm_consumers 
-                    where is_deactivate = 0";
+                    where is_deactivate = 0
+                    and ulb_id=" . $ulbId;
             $consumerdtls = DB::connection($this->dbConn)->select($sql);
             $consumerdtls = collect($consumerdtls)->first();
 
@@ -870,6 +871,7 @@ class ConsumerRepository implements iConsumerRepository
                           count(CASE WHEN consumer_category_id != 1 THEN id end) as commercial
                     FROM swm_consumers 
                     where is_deactivate = 0
+                    and ulb_id=" . $ulbId . "
                     AND   entry_date between '" . $startOfMonth . "' and '" . $endOfMonth . "'";
 
             $newconsumerdtls = DB::connection($this->dbConn)->select($sql);
@@ -880,6 +882,7 @@ class ConsumerRepository implements iConsumerRepository
                             sum(total_tax) as current_demand
                     FROM  swm_demands
                     WHERE is_deactivate = 0
+                    and ulb_id=" . $ulbId . "
                     AND   payment_from between '" . $startOfMonth . "' and '" . $endOfMonth . "'";
 
             $currentDemand = DB::connection($this->dbConn)->select($sql);
@@ -893,7 +896,8 @@ class ConsumerRepository implements iConsumerRepository
                     WHERE is_deactivate = 0
                     AND   paid_status   = 0
                     AND   EXTRACT(MONTH FROM payment_from) < $currentMonth
-                    AND   EXTRACT(YEAR FROM payment_from)  < $currentYear";
+                    AND   EXTRACT(YEAR FROM payment_from)  < $currentYear
+                    and     ulb_id=" . $ulbId;
             $arrearDemand = DB::connection($this->dbConn)->select($sql);
             $arrearDemand = collect($arrearDemand)->first();
 
