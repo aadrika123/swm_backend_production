@@ -1112,9 +1112,9 @@ class ConsumerRepository implements iConsumerRepository
         try {
             if (isset($request->consumerId)) {
 
-                // $user = Auth()->user();
-                $ulbId = $user->ulb_id ?? 2;
-                $userId = $user->id ?? 203;
+                $user = Auth()->user();
+                $ulbId = $user->ulb_id;
+                $userId = $user->id;
                 $consumerId = $request->consumerId;
                 $totalPayableAmt = $request->paidAmount;
                 $transcationDate = date('Y-m-d');
@@ -1655,9 +1655,9 @@ class ConsumerRepository implements iConsumerRepository
 
         try {
 
-            // $user = Auth()->user();
-            $ulbId = $user->ulb_id ?? 2;
-            $userId = $user->id ?? 203;
+            $user = Auth()->user();
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             if (isset($request->paymentMode) && $request->paymentMode == 'Cheque') {
                 $validator = Validator::make($request->all(), [
                     'chequeNo' => 'required',
@@ -2417,7 +2417,7 @@ class ConsumerRepository implements iConsumerRepository
                         $consumerCount = $consumer->count();
                         $monthlyRate = $consumer->sum('rate');
                     }
-                    $getTc = $this->GetUserDetails($transaction->user_id , $this->masterConnection);
+                    $getTc = $this->GetUserDetails($transaction->user_id, $this->masterConnection);
 
                     $response['transactionDate'] = Carbon::create($transaction->transaction_date)->format('Y-m-d');
                     $response['transactionTime'] = Carbon::create($transaction->stampdate)->format('h:i A');
