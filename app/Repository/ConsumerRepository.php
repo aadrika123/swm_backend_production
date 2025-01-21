@@ -2417,7 +2417,7 @@ class ConsumerRepository implements iConsumerRepository
                         $consumerCount = $consumer->count();
                         $monthlyRate = $consumer->sum('rate');
                     }
-                    $getTc = $this->GetUserDetails($transaction->user_id);
+                    $getTc = $this->GetUserDetails($transaction->user_id , $this->masterConnection);
 
                     $response['transactionDate'] = Carbon::create($transaction->transaction_date)->format('Y-m-d');
                     $response['transactionTime'] = Carbon::create($transaction->stampdate)->format('h:i A');
