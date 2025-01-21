@@ -9,5 +9,6 @@ class UserLoginDetail extends Model
 {
     use HasFactory;
     public $timestamps = false;
+    protected $connection = 'pgsql_master';
     protected $table = 'tbl_user_login_details';
 }

@@ -2986,9 +2986,9 @@ class ConsumerRepository implements iConsumerRepository
     {
 
         try {
-            $user = Auth()->user();
-            $ulbId = $user->ulb_id;
-            $userId = $user->id;
+            // $user = Auth()->user();
+            $ulbId = $user->ulb_id ?? 2;
+            $userId = $user->id ?? 203;
             $validator = Validator::make($request->all(), [
                 'routeName' => 'required|MIN:5',
                 'selectedDate' => 'required',
