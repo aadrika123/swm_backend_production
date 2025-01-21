@@ -1252,12 +1252,12 @@ class ConsumerRepository implements iConsumerRepository
                 $geoTagging->consumer_id = ($request->consumerId) ? $request->consumerId : null;
                 $geoTagging->apartment_id = ($request->apartmentId) ? $request->apartmentId : null;
                 $geoTagging->user_id = $userId;
-                // if (!empty($request->photo)) {
-                //     $filePath = md5($refId) . '.' . $request->photo->extension();
-                //     $request->photo->move(public_path('uploads'), $filePath);
+                if (!empty($request->photo)) {
+                    $filePath = md5($refId) . '.' . $request->photo->extension();
+                    $request->photo->move(public_path('uploads'), $filePath);
 
-                //     $geoTagging->file_name = $filePath;
-                // }
+                    $geoTagging->file_name = $filePath;
+                }
 
                 $geoTagging->save();
 
