@@ -520,8 +520,9 @@ class AuthRepository implements iAuth
 
             $sql = "SELECT distinct name,id,mobile,ulb_id,address FROM users
             -- // -- // left join (select user_id,ulb_id from tbl_user_ward group by user_id,ulb_id) uw on uw.user_id=um.id 
-            where user_type='Tc' " . $whereparam . " order by name asc";
-            $allUser = DB::select($sql);
+            where user_type='TC' " . $whereparam . " order by name asc";
+            $allUser = DB::connection($this->masterConnection)->select($sql);
+            // $allUser = DB::select($sql);
 
 
             foreach ($allUser as $user) {
