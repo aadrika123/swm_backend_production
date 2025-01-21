@@ -847,9 +847,9 @@ class ConsumerRepository implements iConsumerRepository
     public function GetTrancation(Request $request)
     {
 
-        $user = Auth()->user();
-        $ulbId = $user->ulb_id;
-        $userId = $user->id;
+        // $user = Auth()->user();
+        $ulbId = $user->ulb_id ?? 2;
+        $userId = $user->id ?? 203;
 
         try {
 
@@ -897,8 +897,8 @@ class ConsumerRepository implements iConsumerRepository
                     $response['monthlyFee'] = $dmddtl['monthlyFee'];
                     $response['paymentTill'] = $dmddtl['paymentTill'];
                     $response['demandAmt'] = $tran->total_demand_amt;
-                    $response['demandFrom'] = $tran->demandFrom;
-                    $response['demandUpto'] = $tran->demandUpto;
+                    $response['demandFrom'] = $tran->demandfrom ;
+                    $response['demandUpto'] = $tran->demandupto;
                 }
 
                 return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
