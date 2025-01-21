@@ -1655,9 +1655,9 @@ class ConsumerRepository implements iConsumerRepository
 
         try {
 
-            $user = Auth()->user();
-            $ulbId = $user->ulb_id;
-            $userId = $user->id;
+            // $user = Auth()->user();
+            $ulbId = $user->ulb_id ?? 2;
+            $userId = $user->id ?? 203;
             if (isset($request->paymentMode) && $request->paymentMode == 'Cheque') {
                 $validator = Validator::make($request->all(), [
                     'chequeNo' => 'required',
@@ -1744,15 +1744,16 @@ class ConsumerRepository implements iConsumerRepository
 
                         DB::connection($this->dbConn)->select($collectionsql);
 
-                        $this->Consumer->join('swm_demands as d', 'd.consumer_id', '=', 'swm_consumers.id')
+                        DB::table('swm_demands')
+                            ->join('swm_consumers', 'swm_consumers.id', '=', 'swm_demands.consumer_id')
                             ->where('swm_consumers.apartment_id', $apartmentId)
                             ->where('swm_consumers.ulb_id', $ulbId)
-                            ->where('d.payment_to', '<=', $paidUpto)
-                            ->where('d.paid_status', '=', 0)
-                            ->where('d.is_deactivate', '=', 0)
-                            ->update(['d.paid_status' => 1]);
+                            ->where('swm_demands.payment_to', '<=', $paidUpto)
+                            ->where('swm_demands.paid_status', '=', 0)
+                            ->where('swm_demands.is_deactivate', '=', 0)
+                            ->update(['swm_demands.paid_status' => 1]);
 
-                        $sql = "SELECT a.apt_name, a.apt_code, sum(ct.rate) as monthly_rate FROM `swm_apartments` a
+                        $sql = "SELECT a.apt_name, a.apt_code, sum(ct.rate) as monthly_rate FROM swm_apartments as a
                         join swm_consumers c on c.apartment_id=a.id
                         join swm_consumer_types ct on c.consumer_type_id=ct.id where a.id=" . $apartmentId . " and a.ulb_id=" . $ulbId . " group by a.apt_name, a.apt_code";
 
@@ -2100,8 +2101,8 @@ class ConsumerRepository implements iConsumerRepository
     {
         try {
             $user = Auth()->user();
-                $ulbId = $user->ulb_id;
-            $userId = $user->id ;
+            $ulbId = $user->ulb_id;
+            $userId = $user->id;
             $validator = Validator::make($request->all(), [
                 'fromDate' => 'required',
                 'toDate' => 'required',
@@ -2519,7 +2520,7 @@ class ConsumerRepository implements iConsumerRepository
                     }
 
 
-                    $getTc = $this->GetUserDetails($userId ,$this->masterConnection);
+                    $getTc = $this->GetUserDetails($userId, $this->masterConnection);
 
 
                     $response['consumerName'] = isset($demand->name) ? $demand->name : '';
@@ -2615,7 +2616,7 @@ class ConsumerRepository implements iConsumerRepository
                 $val['apartmentName'] = ($d->apartment_id > 0) ? $d->apt_name : "";
                 $val['wardNo'] = ($d->ward_no) ? $d->ward_no : $d->apt_ward_no;
                 $val['address'] = ($d->address) ? $d->address : $d->apt_address;
-                $val['denyBy'] = $this->GetUserDetails($d->user_id,$this->masterConnection)->name;
+                $val['denyBy'] = $this->GetUserDetails($d->user_id, $this->masterConnection)->name;
                 $val['denyDate'] = date('d-m-Y h:i A', strtotime($d->deny_date));
                 $val['outstandingAmount'] = $d->outstanding_amount;
                 $val['remarks'] = $d->denied_reason;
@@ -2849,7 +2850,7 @@ class ConsumerRepository implements iConsumerRepository
                 ->get();
             //print_r($reminders);
             foreach ($reminders as $reminder) {
-                $user = $this->GetUserDetails($reminder->user_id ,$this->masterConnection);
+                $user = $this->GetUserDetails($reminder->user_id, $this->masterConnection);
                 $val['id'] = ($reminder->cid) ? $reminder->cid : $reminder->aid;
                 $val['tcName'] = ($user) ? $user->name : '';
                 $val['wardNo'] = ($reminder->ward_no) ? $reminder->ward_no : $reminder->apt_ward;
