@@ -1500,9 +1500,9 @@ class ConsumerRepository implements iConsumerRepository
 
     public function GeoLocation(Request $request)
     {
-        // $user = Auth()->user();
-        $ulbId = $user->ulb_id ?? 2;
-        $userId = $user->id ?? 203;
+        $user = Auth()->user();
+        $ulbId = $user->ulb_id;
+        $userId = $user->id;
         try {
             $response = array();
             if (isset($request->consumerId) || isset($request->apartmentId)) {
@@ -2445,7 +2445,7 @@ class ConsumerRepository implements iConsumerRepository
                 if (isset($request->consumerType))
                     $consumerList = $consumerList->where('swm_consumers.consumer_type_id', $request->consumerType);
 
-                $consumerList = $consumerList->where('swm_consumers.ulb_id', 2)->where('swm_consumers.is_deactivate', 0);
+                $consumerList = $consumerList->where('swm_consumers.ulb_id', $ulbId)->where('swm_consumers.is_deactivate', 0);
 
                 if (isset($request->buildingType) && $request->buildingType == 'flat') {
                     $consumerList = $consumerList->where('swm_consumers.apartment_id', '>', '0');
