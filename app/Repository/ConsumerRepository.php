@@ -3112,7 +3112,7 @@ class ConsumerRepository implements iConsumerRepository
                     'a.apt_code',
                     'a.apt_name',
                     'a.ward_no as apt_ward',
-                    DB::raw("CASE WHEN swm_transactions.paid_status = 1 THEN 'verified' ELSE 'not verified' END as status")
+                    DB::raw("CASE WHEN swm_transactions.paid_status = 1 THEN 'Verified' ELSE 'UnVerified' END as status")
 
                 )
                     ->leftjoin('swm_consumers', 'swm_transactions.consumer_id', '=', 'swm_consumers.id')
