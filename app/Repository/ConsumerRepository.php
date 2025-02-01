@@ -1429,7 +1429,7 @@ class ConsumerRepository implements iConsumerRepository
                         $response['transactionId'] = $trans->id;
                         $response['transactionDate'] = $transcationDate;
                         $response['transactionTime'] =  date("h:i A");
-                        $response['transactionNo'] = $userId . date("dmY") . $trans->id;
+                        $response['transactionNo'] = date("dmY") . $trans->id;
                         $response['holdingNo'] = $consumer->holding_no;
                         $response['mobileNo'] = $consumer->mobile_no;
                         $response['monthlyRate'] = $consumer->rate;
