@@ -349,7 +349,6 @@ class ConsumerRepository implements iConsumerRepository
     {
 
         try {
-
             $user = Auth()->user();
             $ulbId = $user->ulb_id;
             $userId = $user->id;
@@ -3105,7 +3104,17 @@ class ConsumerRepository implements iConsumerRepository
             $userId = $user->id;
             $response = array();
             if (isset($request->consumerId) || isset($request->apartmentId)) {
-                $allTrans = $this->Transaction->select('swm_transactions.*', 'swm_consumers.ward_no', 'consumer_no', 'name', 'a.apt_code', 'a.apt_name', 'a.ward_no as apt_ward')
+                $allTrans = $this->Transaction->select(
+                    'swm_transactions.*',
+                    'swm_consumers.ward_no',
+                    'consumer_no',
+                    'name',
+                    'a.apt_code',
+                    'a.apt_name',
+                    'a.ward_no as apt_ward',
+                    DB::raw("CASE WHEN swm_transactions.paid_status = 1 THEN 'verified' ELSE 'not verified' END as status")
+
+                )
                     ->leftjoin('swm_consumers', 'swm_transactions.consumer_id', '=', 'swm_consumers.id')
                     ->leftjoin('swm_apartments as a', 'swm_transactions.apartment_id', '=', 'a.id')
                     ->where('swm_transactions.ulb_id', $ulbId);
@@ -3135,6 +3144,7 @@ class ConsumerRepository implements iConsumerRepository
                     $val['apartmentCode'] = $trans->apt_code;
                     $val['apartmentName'] = $trans->apt_name;
                     $val['transactionNo'] = $trans->transaction_no;
+                    $val['status'] = $trans->status;
                     $val['mode'] = $trans->payment_mode;
                     $val['transactionDate'] = Carbon::create($trans->transaction_date)->format('d-m-Y');
                     $val['amount'] = $trans->total_payable_amt;
