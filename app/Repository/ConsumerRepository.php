@@ -1395,7 +1395,7 @@ class ConsumerRepository implements iConsumerRepository
                     $trans->save();
 
                     if ($trans->id > 0) {
-                        $trans->transaction_no = $userId . date("dmY") . $trans->id;
+                        $trans->transaction_no = date("dmY") . $trans->id;
                         $trans->save();
 
                         if ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd') {
@@ -3552,7 +3552,7 @@ class ConsumerRepository implements iConsumerRepository
         try {
 
             // $ulbId = $this->GetUlbIds($request->userId);
-            $ulbId = $request->ulbId ?? 11;
+            $ulbId = $request->ulbId;
             $dbReceipt = "juidco_swm";
             $response = array();
             if (isset($request->transactionNo)) {
@@ -3573,7 +3573,8 @@ class ConsumerRepository implements iConsumerRepository
                     GROUP BY transaction_id
                 ) cl on cl.transaction_id=t.id 
                 LEFT JOIN swm_transaction_details td on td.transaction_id=t.id
-                WHERE t.transaction_no='" . $transactionNo . "'";
+                WHERE t.transaction_no = $transactionNo ;
+                -- // WHERE t.transaction_no='" . $transactionNo . "'";
                 DB::connection($this->dbConn)->enableQueryLog();
                 $transaction = DB::connection($this->dbConn)->select($sql);
 
