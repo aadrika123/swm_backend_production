@@ -8,6 +8,7 @@ use App\Models\Ward;
 use App\Models\Ulb;
 use App\Models\TblUserMstr;
 use App\Models\UserWardPermission;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 
@@ -210,6 +211,7 @@ trait Helpers
 
     public function GetUlbData($ulbId)
     {
+        $docBaseUrl = Config::get('constants.DOC_URL');
         if (isset($ulbId)) {
             $ulb = Ulb::where('id', $ulbId)->first();
             $ulbData = array();
@@ -224,7 +226,8 @@ trait Helpers
                 $ulbData['accountName'] = $ulb->account_name;
                 $ulbData['accountNo'] = $ulb->account_no;
                 $ulbData['ifscNo'] = $ulb->ifsc_no;
-                $ulbData['logo'] = "uploads/logo/" . $ulb->logo;
+                // $ulbData['logo'] = "uploads/logo/" . $ulb->logo;
+                $ulbData['logo'] = $docBaseUrl . "/" . $ulb->logo;
             }
             return $ulbData;
         }
