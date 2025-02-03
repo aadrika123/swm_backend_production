@@ -638,4 +638,15 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->tcReminderList($req);
     }
+
+    /**
+     * Get Cheque dd details.
+     *
+     * @param  $request
+     * @return ConsumerRepository->getChequeDdDetails
+     */
+    public function getChequeDdDetails(Request $req)
+    {
+        return $this->ConResp->getChequeDdDetails($req);
+    }
 }

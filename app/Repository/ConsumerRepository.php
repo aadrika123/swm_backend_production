@@ -3602,6 +3602,8 @@ class ConsumerRepository implements iConsumerRepository
                     }
                     $getTc = $this->GetUserDetails($transaction->user_id, $this->masterConnection);
 
+
+
                     $response['transactionDate'] = Carbon::create($transaction->transaction_date)->format('Y-m-d');
                     $response['transactionTime'] = Carbon::create($transaction->stampdate)->format('h:i A');
                     $response['transactionNo'] = $transaction->transaction_no;
@@ -3723,6 +3725,49 @@ class ConsumerRepository implements iConsumerRepository
             }
 
             return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
+
+
+    public function getChequeDdDetails(Request $request)
+    {
+        try {
+
+            $validator = Validator::make($request->all(), [
+                'transactionId' => 'required'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['status' => False, 'msg' => $validator->messages()]);
+            }
+
+            $transactionId = $request->transactionId;
+            if (isset($transactionId)) {
+                $userId = Auth()->user()->id;
+                $ulbId = $this->GetUlbId($userId);
+
+                $data = $this->Transaction
+                    ->select(
+                        'swm_transactions.id',
+                        'transaction_no',
+                        'transaction_date',
+                        'total_demand_amt',
+                        'total_payable_amt',
+                        'payment_mode',
+                        'bank_name',
+                        'branch_name',
+                        'cheque_dd_no',
+                        'cheque_dd_date',
+                    )
+                    ->join('swm_transaction_details', 'swm_transaction_details.transaction_id', 'swm_transactions.id')
+                    ->where('swm_transactions.id', $transactionId)
+                    ->where('swm_transactions.ulb_id', $ulbId)
+                    ->first();
+
+                return response()->json(['status' => True, 'data' => $data, 'msg' => 'Cheque DD Details'], 200);
+            }
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
