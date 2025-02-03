@@ -203,7 +203,7 @@ trait Helpers
             $userPerm = ViewUser::select('ulb_id')
                 ->where('id', $userId)
                 ->first();
-            return $userPerm->current_ulb;
+            return $userPerm->ulb_id;
         } else {
             return  $default; // for default for ranchi;
         }
