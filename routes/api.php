@@ -123,7 +123,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/createDefaultConsumerApartment', 'DefaultConsumerApartment');
         Route::post('swm/tcReminderList', 'tcReminderList');
 
-        Route::post('getChequeDdDetails', 'getChequeDdDetails');
+        Route::post('swm/getChequeDdDetails', 'getChequeDdDetails');
     });
 
     Route::controller(MasterController::class)->group(function () {
