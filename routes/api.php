@@ -164,7 +164,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
     Route::controller(ReportController::class)->group(function () {
         Route::post('swm/getReportData', 'GetReportData');              // Route for get all type of report
         Route::post('swm/getDemandReceiptData', 'GetDemandReceiptData'); // Route for get all demand receipt report
-
+        Route::post('swm/create-tc-geolocation', 'addTcGeoLocation');
         Route::post('swm/list-tc-geolocation', 'tcGeolocationList');
     });
 });
