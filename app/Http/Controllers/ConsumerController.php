@@ -649,4 +649,9 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->getChequeDdDetails($req);
     }
+
+    public function getTcComplainV2(Request $req)
+    {
+        return $this->ConResp->getTcComplainV2($req);
+    }
 }
