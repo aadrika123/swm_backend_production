@@ -3846,4 +3846,32 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => false, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
+
+    /**
+     * | Get the Consumer Details By Consumer No
+     */
+    public function consumerDetailByConsumerNo(Request $req)
+    {
+        $validator = Validator::make($req->all(), [
+            'consumerNo'     => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => False, 'msg' => $validator->messages()->first(), 'data' => ""]);
+        }
+
+        try {
+            $user = Auth()->user();
+            $data = $this->Consumer
+                ->where('consumer_no', $req->consumerNo)
+                ->where('is_deactivate', 0)
+                ->first();
+
+            if ($data)
+                return response()->json(['status' => true, 'data' => $data, 'msg' => ''], 200);
+            else
+                return response()->json(['status' => true, 'data' => $data, 'msg' => ''], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
 }

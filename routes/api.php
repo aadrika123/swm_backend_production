@@ -126,6 +126,8 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/getChequeDdDetails', 'getChequeDdDetails');
 
         Route::post('swm/v2/getComplainList', 'getTcComplainV2');
+
+        Route::post('swm/consumer-details', 'consumerDetailByConsumerNo');
     });
 
     Route::controller(MasterController::class)->group(function () {
