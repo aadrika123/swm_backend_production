@@ -847,9 +847,9 @@ class ConsumerRepository implements iConsumerRepository
         $currentYear   = Carbon::now()->format('Y');
         $startOfMonth  = Carbon::parse($request->fromDate)->startOfMonth()->toDateString();
         $endOfMonth    = Carbon::parse($request->toDate)->endOfMonth()->toDateString();
-        $user   = Auth()->user();
-        $ulbId  = $user->ulb_id;
-        $userId = $user->id;
+        // $user   = Auth()->user();
+        $ulbId  = $user->ulb_id ?? 2;
+        $userId = $user->id ?? 203;
 
         try {
             $response = array();
@@ -880,8 +880,8 @@ class ConsumerRepository implements iConsumerRepository
             $sql = "SELECT 
                             sum(total_tax) as current_demand
                     FROM  swm_demands
-                    WHERE is_deactivate = 0
-                    and ulb_id=" . $ulbId . "
+                    --WHERE is_deactivate = 0
+                    WHERE   ulb_id=" . $ulbId . "
                     AND   payment_from between '" . $startOfMonth . "' and '" . $endOfMonth . "'";
 
             $currentDemand = DB::connection($this->dbConn)->select($sql);
@@ -892,9 +892,9 @@ class ConsumerRepository implements iConsumerRepository
             $sql = "SELECT 
                             sum(total_tax) as arrear_demand
                     FROM  swm_demands
-                    WHERE is_deactivate = 0
-                    AND   paid_status   = 0
-                    AND   EXTRACT(MONTH FROM payment_from) < $currentMonth
+                    --WHERE is_deactivate = 0
+                    --WHERE   paid_status   = 0
+                    WHERE   EXTRACT(MONTH FROM payment_from) < $currentMonth
                     AND   EXTRACT(YEAR FROM payment_from)  < $currentYear
                     and     ulb_id=" . $ulbId;
             $arrearDemand = DB::connection($this->dbConn)->select($sql);
@@ -907,8 +907,8 @@ class ConsumerRepository implements iConsumerRepository
             $response['currentMonthTotalConsumer']            = $newconsumerdtls->total_consumer ?? 0;
             $response['currentMonthTotalResidentialConsumer'] = $newconsumerdtls->residential ?? 0;
             $response['currentMonthTotalCommercialConsumer']  = $newconsumerdtls->commercial ?? 0;
-            $response['currentDemand']                        = $currentDemand->current_demand ?? 0;
-            $response['arrearDemand']                         = $arrearDemand->arrear_demand ?? 0;
+             $response['currentDemand']                        = $currentDemand->current_demand ?? 0;
+           $response['arrearDemand']                         = $arrearDemand->arrear_demand ?? 0;
             $response['totalDemand']                          = $arrearDemand->arrear_demand + $currentDemand->current_demand;
 
             //  $this->responseMsgs(true, "You Got Late", $response);
@@ -944,7 +944,7 @@ class ConsumerRepository implements iConsumerRepository
                             and swm_transactions.paid_status!=0";
 
             $overAllcolls = DB::connection($this->dbConn)->select($sqlcollection);
-            $overAllcolls = collect($overAllcolls)->first();
+           $overAllcolls = collect($overAllcolls)->first();
 
 
             if (isset($request->fromDate) && isset($request->toDate)) {
@@ -1042,7 +1042,7 @@ class ConsumerRepository implements iConsumerRepository
                 $response['outstandingDemand'] = $Report->outstanding_amount ?? 0;
                 $response['totalCollection']   = round($overAllcolls->value) ?? 0;
                 $response['currentCollection']   = $currentCollection ?? 0;
-                $response['totalBalance']      = (($arrearDemand->arrear_demand + $currentDemand->current_demand) - round($overAllcolls->value)) ?? 0;
+               $response['totalBalance']      = (($arrearDemand->arrear_demand + $currentDemand->current_demand) - round($overAllcolls->value)) ?? 0;
                 // $response['currentBalance']    = ($currentDemand->current_demand - $currentCollection) ?? 0;
                 $response['reconcilePending'] = $total_reconcile ?? 0;
                 $response['adjustmentAmount'] = $Report->adjust_amount ?? 0;
