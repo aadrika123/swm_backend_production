@@ -907,8 +907,8 @@ class ConsumerRepository implements iConsumerRepository
             $response['currentMonthTotalConsumer']            = $newconsumerdtls->total_consumer ?? 0;
             $response['currentMonthTotalResidentialConsumer'] = $newconsumerdtls->residential ?? 0;
             $response['currentMonthTotalCommercialConsumer']  = $newconsumerdtls->commercial ?? 0;
-             $response['currentDemand']                        = $currentDemand->current_demand ?? 0;
-           $response['arrearDemand']                         = $arrearDemand->arrear_demand ?? 0;
+            $response['currentDemand']                        = $currentDemand->current_demand ?? 0;
+            $response['arrearDemand']                         = $arrearDemand->arrear_demand ?? 0;
             $response['totalDemand']                          = $arrearDemand->arrear_demand + $currentDemand->current_demand;
 
             //  $this->responseMsgs(true, "You Got Late", $response);
@@ -944,7 +944,7 @@ class ConsumerRepository implements iConsumerRepository
                             and swm_transactions.paid_status!=0";
 
             $overAllcolls = DB::connection($this->dbConn)->select($sqlcollection);
-           $overAllcolls = collect($overAllcolls)->first();
+            $overAllcolls = collect($overAllcolls)->first();
 
 
             if (isset($request->fromDate) && isset($request->toDate)) {
@@ -1042,7 +1042,7 @@ class ConsumerRepository implements iConsumerRepository
                 $response['outstandingDemand'] = $Report->outstanding_amount ?? 0;
                 $response['totalCollection']   = round($overAllcolls->value) ?? 0;
                 $response['currentCollection']   = $currentCollection ?? 0;
-               $response['totalBalance']      = (($arrearDemand->arrear_demand + $currentDemand->current_demand) - round($overAllcolls->value)) ?? 0;
+                $response['totalBalance']      = (($arrearDemand->arrear_demand + $currentDemand->current_demand) - round($overAllcolls->value)) ?? 0;
                 // $response['currentBalance']    = ($currentDemand->current_demand - $currentCollection) ?? 0;
                 $response['reconcilePending'] = $total_reconcile ?? 0;
                 $response['adjustmentAmount'] = $Report->adjust_amount ?? 0;
@@ -2443,6 +2443,9 @@ class ConsumerRepository implements iConsumerRepository
 
                 if (isset($request->consumerType))
                     $consumerList = $consumerList->where('swm_consumers.consumer_type_id', $request->consumerType);
+
+                if (isset($request->mobileNo))
+                    $consumerList = $consumerList->where('swm_consumers.mobile_no', $request->mobileNo);
 
                 $consumerList = $consumerList->where('swm_consumers.ulb_id', $ulbId)->where('swm_consumers.is_deactivate', 0);
 
