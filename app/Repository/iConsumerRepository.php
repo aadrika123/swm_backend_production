@@ -108,4 +108,6 @@ interface iConsumerRepository
     public function AnalyticDashboardData(Request $request);
 
     public function DefaultConsumerAdd(Request $request);
+
+    public function consumerDetalsInformation(Request $request); // added by alok
 }

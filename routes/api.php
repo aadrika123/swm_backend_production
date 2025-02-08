@@ -128,6 +128,9 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/v2/getComplainList', 'getTcComplainV2');
 
         Route::post('swm/consumer-details', 'consumerDetailByConsumerNo');
+
+        // created by : alok
+        Route::post('swm/consumerDetalsInformation', 'consumerDetalsInformation');
     });
 
     Route::controller(MasterController::class)->group(function () {

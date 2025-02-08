@@ -3877,4 +3877,109 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => false, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
+
+     /* 
+    * || Get Consumer Details Info Filtering By Consumer No
+    * || @param filterBy 
+    * || @param filterValue
+    * || # Added By Alok
+    */
+
+
+    public function consumerDetalsInformation(Request $request)
+    {
+        try {
+            $conArr = array();
+
+            // Validate incoming request data
+            if (!isset($request->filterBy) || !isset($request->filterValue)) {
+                return response()->json(['status' => false, 'data' => $conArr, 'msg' => 'Undefined parameter supplied'], 200);
+            }
+
+            // Initialize the consumer query
+            $consumerList = $this->Consumer
+                ->join('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
+                ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
+                ->join('ulb_masters', 'ulb_masters.id', 'swm_consumers.ulb_id')
+                ->leftJoin('swm_apartments', 'swm_consumers.apartment_id', '=', 'swm_apartments.id')
+                ->select(DB::raw('swm_consumers.*, 
+                    swm_consumer_categories.name as category, 
+                    swm_consumer_types.name as type, 
+                    swm_apartments.apt_name, 
+                    swm_apartments.apt_code,
+                    ulb_masters.ulb_name'))
+                ->where('swm_consumers.ulb_id', 2);
+
+            // Filter based on filterBy and filterValue
+            if ($request->filterBy === 'consumerNo') {
+                $consumerList = $consumerList->where('swm_consumers.consumer_no', 'ilike', '%' . $request->filterValue . '%');
+            } else {
+                return response()->json([
+                    "status" => false,
+                    "message" => "Invalid filterBy value",
+                    "meta-data" => [
+                        "apiId" => "011302",
+                        "version" => "1.0",
+                        "responsetime" => "",
+                        "epoch" => now()->format('Y-m-d H:i:s'),
+                        "action" => "POST",
+                        "deviceId" => ""
+                    ],
+                    "data" => []
+                ], 200);
+            }
+
+            // Fetch active consumers
+            $consumerList = $consumerList->where('swm_consumers.is_deactivate', 0)->get();
+
+            // Construct response data
+            foreach ($consumerList as $consumer) {
+                $con['id'] = $consumer->id;
+                $con['wardNo'] = $consumer->ward_no;
+                $con['holdingNo'] = $consumer->holding_no;
+                $con['applicantName'] = $consumer->name;
+                $con['apartmentName'] = $consumer->apt_name;
+                $con['ulbName'] = $consumer->ulb_name;
+                $con['apartmentCode'] = $consumer->apt_code;
+                $con['consumerNo'] = (string)$consumer->consumer_no;
+                $con['Address'] = $consumer->address;
+                $con['pinCode'] = $consumer->pincode;
+                $con['consumerCategory'] = $consumer->category;
+                $con['consumerType'] = $consumer->type;
+                $con['mobileNo'] = $consumer->mobile_no;
+                $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
+                $con['status'] = ($consumer->is_deactivate == 0) ? 'Active' : 'Deactive';
+                $conArr[] = $con;
+            }
+
+            return response()->json([
+                "status" => true,
+                "message" => "Application Details",
+                "meta-data" => [
+                    "apiId" => "011302",
+                    "version" => "1.0",
+                    "responsetime" => "",
+                    "epoch" => now()->format('Y-m-d H:i:s'),
+                    "action" => "POST",
+                    "deviceId" => ""
+                ],
+                "data" => $conArr
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                "status" => false,
+                "message" => $e->getMessage(),
+                "meta-data" => [
+                    "apiId" => "011302",
+                    "version" => "1.0",
+                    "responsetime" => "",
+                    "epoch" => now()->format('Y-m-d H:i:s'),
+                    "action" => "POST",
+                    "deviceId" => ""
+                ],
+                "data" => []
+            ], 400);
+        }
+    }
+
 }
