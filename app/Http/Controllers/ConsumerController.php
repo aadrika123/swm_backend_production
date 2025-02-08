@@ -659,5 +659,17 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->consumerDetailByConsumerNo($req);
     }
-    
+
+     /**
+    * Get consumer list by category.
+    *
+    * @param  $request
+    * @return ConsumerRepository->consumerDetalsInformation
+    */
+    public function consumerDetalsInformation(Request $req)
+    {
+        return $this->ConResp->consumerDetalsInformation($req);
+    }
 }
+    
+
