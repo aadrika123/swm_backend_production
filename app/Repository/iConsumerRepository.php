@@ -110,4 +110,16 @@ interface iConsumerRepository
     public function DefaultConsumerAdd(Request $request);
 
     public function consumerDetalsInformation(Request $request); // added by alok
+
+    public function CitizenList(Request $request);
+
+    public function CitizenAllDetails(Request $request);
+
+    public function CitizenDemanDetails(Request $request);
+
+    public function CitizenPaymentDetails(Request $request);
+
+    public function citizenCalculatedAmount(Request $request);
+
+    public function generateCitizenOrder(Request $request);
 }

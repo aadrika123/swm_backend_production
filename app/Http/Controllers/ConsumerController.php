@@ -660,15 +660,40 @@ class ConsumerController extends Controller
         return $this->ConResp->consumerDetailByConsumerNo($req);
     }
 
-     /**
-    * Get consumer list by category.
-    *
-    * @param  $request
-    * @return ConsumerRepository->consumerDetalsInformation
-    */
+    //alok
     public function consumerDetalsInformation(Request $req)
     {
         return $this->ConResp->consumerDetalsInformation($req);
+    }
+
+    public function consumerListById(Request $req)
+    {
+        return $this->ConResp->CitizenList($req);
+    }
+    
+    public function CitizenAllDetails(Request $req)
+    {
+        return $this->ConResp->CitizenAllDetails($req);
+    }
+
+    public function CitizenDemanDetails(Request $req)
+    {
+        return $this->ConResp->CitizenDemanDetails($req);
+    }
+
+    public function CitizenPaymentDetails(Request $req)
+    {
+        return $this->ConResp->CitizenPaymentDetails($req);
+    }
+
+    public function citizenCalculatedAmount(Request $req)
+    {
+        return $this->ConResp->citizenCalculatedAmount($req);
+    }
+
+    public function generateCitizenOrder(Request $req)
+    {
+        return $this->ConResp->generateCitizenOrder($req);
     }
 }
     

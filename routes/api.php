@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CitizenController;
 use App\Http\Controllers\ConsumerController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\ReportController;
@@ -129,8 +130,20 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
 
         Route::post('swm/consumer-details', 'consumerDetailByConsumerNo');
 
-        // created by : alok
+        # created by : alok
         Route::post('swm/consumerDetalsInformation', 'consumerDetalsInformation');
+
+        Route::post('swm/consumerListById', 'consumerListById');
+        
+        Route::post('swm/CitizenAllDetails', 'CitizenAllDetails');
+
+        Route::post('swm/CitizenDemanDetails', 'CitizenDemanDetails');
+
+        Route::post('swm/CitizenPaymentDetails', 'CitizenPaymentDetails');
+
+        Route::post('swm/citizenCalculatedAmount', 'citizenCalculatedAmount');
+
+        Route::post('swm/generateCitizenOrder', 'generateCitizenOrder');
     });
 
     Route::controller(MasterController::class)->group(function () {
@@ -163,6 +176,11 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/postWardAdd', 'WardAdd');
         Route::post('swm/postWardUpdate', 'WardUpdate');
         Route::post('swm/getWardListById', 'WardById');
+        
+        //alok
+        Route::post('swm/GetConsumerAddFormData', 'GetConsumerAddFormData');
+
+
     });
 
 
