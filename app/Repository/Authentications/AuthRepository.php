@@ -753,7 +753,8 @@ class AuthRepository implements iAuth
                     ->join('ulb_masters', 'ulb_masters.id', '=', 'users.ulb_id')
                     ->join('wf_roleusermaps', 'wf_roleusermaps.user_id', '=', 'users.id')
                     ->join('wf_roles', 'wf_roles.id', '=', 'wf_roleusermaps.wf_role_id')
-                    ->where('suspended', false)
+                    ->where('wf_roleusermaps.suspended', false)
+                    ->where('users.suspended', false)
                     ->first();
                 $response['id'] = $lastLogin->id;
                 // $response['userId'] = $lastLogin->user_name;
