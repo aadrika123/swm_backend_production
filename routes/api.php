@@ -134,7 +134,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/consumerDetalsInformation', 'consumerDetalsInformation');
 
         Route::post('swm/consumerListById', 'consumerListById');
-        
+
         Route::post('swm/CitizenAllDetails', 'CitizenAllDetails');
 
         Route::post('swm/CitizenDemanDetails', 'CitizenDemanDetails');
@@ -144,6 +144,10 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/citizenCalculatedAmount', 'citizenCalculatedAmount');
 
         Route::post('swm/generateCitizenOrder', 'generateCitizenOrder');
+        // ARSHAD
+        Route::post('swm/caretaker-otp', 'swmCaretakerOtp');
+        Route::post('swm/caretaker-consumer-tagging', 'caretakerConsumerTag');
+        Route::post('swm/caretaken-connections', 'viewCaretakenConnection');                       // Citiizen
     });
 
     Route::controller(MasterController::class)->group(function () {
@@ -176,11 +180,9 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/postWardAdd', 'WardAdd');
         Route::post('swm/postWardUpdate', 'WardUpdate');
         Route::post('swm/getWardListById', 'WardById');
-        
+
         //alok
         Route::post('swm/GetConsumerAddFormData', 'GetConsumerAddFormData');
-
-
     });
 
 

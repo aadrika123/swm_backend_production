@@ -695,6 +695,19 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->generateCitizenOrder($req);
     }
+    public function swmCaretakerOtp(Request $req)
+    {
+        return $this->ConResp->swmCaretakerOtp($req);
+    }
+
+    public function caretakerConsumerTag(Request $req)
+    {
+        return $this->ConResp->caretakerConsumerTag($req);
+    }
+    public function viewCaretakenConnection(Request $req)
+    {
+        return $this->ConResp->viewCaretakenConnection($req);
+    }
 }
     
 

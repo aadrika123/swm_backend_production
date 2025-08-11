@@ -2,6 +2,8 @@
 
 namespace App\Repository;
 
+use App\Http\Controllers\ThirdPartyController;
+use App\Models\ActiveCitizenUndercare;
 use App\Models\RazorpayReq;
 // use App\Repository\Config;
 
@@ -370,9 +372,9 @@ class ConsumerRepository implements iConsumerRepository
             $ulbId = $user->ulb_id;
             $userId = $user->id;
             $userType = $user->user_type;
-            
+
             $validator = Validator::make($request->all(), [
-                'consumerName' => 'required', 
+                'consumerName' => 'required',
                 'wardNo' => 'required',
                 'mobileNo' => 'required',
                 'address' => 'required',
@@ -3902,7 +3904,7 @@ class ConsumerRepository implements iConsumerRepository
         }
     }
 
-     /* 
+    /* 
     * || Get Consumer Details Info Filtering By Consumer No
     * || @param filterBy 
     * || @param filterValue
@@ -4028,9 +4030,8 @@ class ConsumerRepository implements iConsumerRepository
             if ($consumers->isEmpty()) {
                 return response()->json(['status' => false, 'msg' => 'No Citizen found'], 404);
             }
-    
-            return response()->json([ "status" => true, "message" => "Demand Details", "data" => $consumers], 200);
 
+            return response()->json(["status" => true, "message" => "Demand Details", "data" => $consumers], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
@@ -4048,28 +4049,27 @@ class ConsumerRepository implements iConsumerRepository
             $userType = $user->user_type;
 
             $mConsumer = new Consumer();
-    
+
             if (!$user || $userType !== 'Citizen') {
                 return response()->json(['status' => false, 'msg' => 'Unauthorized access'], 404);
             }
-    
+
             $request->validate([
                 'consumerId' => 'required|integer'
             ]);
-    
+
             $consumerId = $request->consumerId;
             $consumer = $mConsumer->citizenAllDetails($consumerId, $user->id);
-    
+
             if (!$consumer) {
                 return response()->json(['status' => false, 'msg' => 'Citizen not found'], 404);
             }
-    
-            return response()->json([ "status" => true, "message" => "Demand Details", "data" => $consumer], 200);
-    
+
+            return response()->json(["status" => true, "message" => "Demand Details", "data" => $consumer], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
-    }  
+    }
 
     /* 
     * |  Retrieve a list of all demand of citizens with respect to the authenticated user id (ConsumerId).
@@ -4099,17 +4099,16 @@ class ConsumerRepository implements iConsumerRepository
             $consumer = $mConsumer->citizenDemandDetails($consumerId, $user->id, $perPage);
 
             if ($consumer->isEmpty()) {
-                return response()->json([ "status" => false, "message" => "Citizen Not Found"], 404);
+                return response()->json(["status" => false, "message" => "Citizen Not Found"], 404);
             }
 
             return response()->json([
                 "status" => true,
-                "message" => "Demand Details",                
+                "message" => "Demand Details",
                 "total_count" => $consumer->total(),
                 "total_demand" => $consumer->sum('total_tax'),
                 "data" => $consumer->items()
             ], 200);
-
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
@@ -4127,30 +4126,29 @@ class ConsumerRepository implements iConsumerRepository
             $userType = $user->user_type;
 
             $mConsumer = new Consumer();
-    
+
             if (!$user || $userType !== 'Citizen') {
                 return response()->json(['status' => false, 'msg' => 'Unauthorized access'], 404);
             }
-    
+
             $request->validate([
                 'consumerId' => 'required|integer'
             ]);
-    
+
             $consumerId = $request->consumerId;
             $consumer   = $mConsumer->citizenPaymentDetails($consumerId, $user->id);
-    
+
             if (!$consumer) {
                 return response()->json(["status" => false, "message" => "Citizen Not Found"], 404);
             }
-    
-            return response()->json([ "status" => true, "message" => "Payment Details", "data" => $consumer], 200);
-    
+
+            return response()->json(["status" => true, "message" => "Payment Details", "data" => $consumer], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
     }
-    
-     /* 
+
+    /* 
     * |  This APi calculate total dimand according to month-year 
     * |  and retrive list of citizens with respect to the authenticated user id (ConsumerId). 
     * |  created by : Alok
@@ -4163,32 +4161,30 @@ class ConsumerRepository implements iConsumerRepository
             $userType   = $user->user_type;
 
             $consumerModel = new Consumer();
-            
+
             if (!$user || $userType !== 'Citizen') {
                 return response()->json(['status' => false, 'msg' => 'Unauthorized access'], 403);
             }
-            
+
             $response = array();
             if (isset($request->consumerId) && isset($request->payUpto)) {
-                
+
                 $calculatedDemand = $consumerModel->calculateCitizenDemand($request->consumerId, $request->payUpto);
-                
+
                 $response['totaldemand']     = $calculatedDemand['total_demand'];
                 $response['paymentUptoDate'] = $calculatedDemand['payment_upto_date'];
 
                 return response()->json(['status' => true, 'data' => $response, 'msg' => 'Demand Successfully Calculated.'], 200);
-
             } else {
 
                 return response()->json(['status' => false, 'data' => $response, 'msg' => 'Undefined parameter supply.'], 200);
-                
             }
         } catch (Exception $e) {
             return response()->json(['status' => false, 'data' => '', 'msg' => $e->getMessage()], 500);
         }
     }
 
-     /* 
+    /* 
     * | This function is responsible for generating an order
     * | for a citizen using the Razorpay payment gateway.
     * | created by : Alok
@@ -4205,59 +4201,58 @@ class ConsumerRepository implements iConsumerRepository
             if (!$user || $userType !== 'Citizen') {
                 return response()->json(['status' => false, 'msg' => 'Unauthorized access'], 403);
             }
-            
+
             if (isset($request->consumerId) && isset($request->payUpto)) {
                 $calculatedDemand = $consumerModel->orderIdForCitizenDemand($request->consumerId, $request->payUpto);
-               
-               
+
+
                 $refRazorpayId  = Config::get('razorpay.RAZORPAY_ID');
                 $refRazorpayKey = Config::get('razorpay.RAZORPAY_KEY');
-                
+
                 $mApi = new Api($refRazorpayId, $refRazorpayKey);
-    
-                
+
+
                 $mOrder = $mApi->order->create([
-                    'receipt'           => Str::random(15), 
+                    'receipt'           => Str::random(15),
                     'amount'            => $calculatedDemand->total_demand * 100,
                     'currency'          => 'INR',
                     'payment_capture'   => 1
-                ]);             
-                 
-                
-              $response = [
+                ]);
+
+
+                $response = [
                     'orderId'           => $mOrder['id'],
-                    'totaldemand'       => $calculatedDemand    ->  total_demand    ?? 0,
-                    'paymentUptoDate'   => $request             ->  payUpto         ?? null,
-                    'consumer_id'       => $calculatedDemand    ->  consumer_id     ?? null,
-                    'ward_no'           => $calculatedDemand    ->  ward_no         ?? null,
-                    'consumer_no'       => $calculatedDemand    ->  consumer_no     ?? null,
-                    'name'              => $calculatedDemand    ->  name            ?? null,
-                    'mobile_no'         => $calculatedDemand    ->  mobile_no       ?? null,
-                    'address'           => $calculatedDemand    ->  address         ?? null,
-                    'ulb_id'            => $calculatedDemand    ->  ulb_id          ?? null,
+                    'totaldemand'       => $calculatedDemand->total_demand    ?? 0,
+                    'paymentUptoDate'   => $request->payUpto         ?? null,
+                    'consumer_id'       => $calculatedDemand->consumer_id     ?? null,
+                    'ward_no'           => $calculatedDemand->ward_no         ?? null,
+                    'consumer_no'       => $calculatedDemand->consumer_no     ?? null,
+                    'name'              => $calculatedDemand->name            ?? null,
+                    'mobile_no'         => $calculatedDemand->mobile_no       ?? null,
+                    'address'           => $calculatedDemand->address         ?? null,
+                    'ulb_id'            => $calculatedDemand->ulb_id          ?? null,
                 ];
 
                 // Save details to RazorpayReq Model (Table)
-                $razorpayReq = new RazorpayReq();                
-                $razorpayReq    ->  order_id         = $mOrder['id'];
-                $razorpayReq    ->  merchant_id      = $merchantId ?? null;
-                $razorpayReq    ->  payment_type     = $paymentType ?? 'Online';
-                $razorpayReq    ->  consumer_id      = $response['consumer_id'];
-                $razorpayReq    ->  apartment_id     = $apartmentId ?? null;
-                $razorpayReq    ->  user_id          = $user->id ?? null;
-                $razorpayReq    ->  amount           = $response['totaldemand'];
-                $razorpayReq    ->  currency         = $currency ?? 'INR'; 
-                $razorpayReq    ->  payment_status   = $paymentStatus ?? 0;
-                $razorpayReq    ->  ulb_id           = $response['ulb_id'] ?? null;
-                $razorpayReq    ->  ip_address       = $request->ip();
-                $razorpayReq    ->  status           = 0;
-                $razorpayReq    ->  created_at       = Carbon::now();
-                $razorpayReq    ->  updated_at       = Carbon::now();
+                $razorpayReq = new RazorpayReq();
+                $razorpayReq->order_id         = $mOrder['id'];
+                $razorpayReq->merchant_id      = $merchantId ?? null;
+                $razorpayReq->payment_type     = $paymentType ?? 'Online';
+                $razorpayReq->consumer_id      = $response['consumer_id'];
+                $razorpayReq->apartment_id     = $apartmentId ?? null;
+                $razorpayReq->user_id          = $user->id ?? null;
+                $razorpayReq->amount           = $response['totaldemand'];
+                $razorpayReq->currency         = $currency ?? 'INR';
+                $razorpayReq->payment_status   = $paymentStatus ?? 0;
+                $razorpayReq->ulb_id           = $response['ulb_id'] ?? null;
+                $razorpayReq->ip_address       = $request->ip();
+                $razorpayReq->status           = 0;
+                $razorpayReq->created_at       = Carbon::now();
+                $razorpayReq->updated_at       = Carbon::now();
 
                 $razorpayReq->save();
-                
+
                 return response()->json(['status' => true, 'data' => $response, 'msg' => 'Order Successfully Generated and Stored.'], 200);
-    
             } else {
                 return response()->json(['status' => false, 'msg' => 'Undefined parameter supply.'], 200);
             }
@@ -4274,29 +4269,136 @@ class ConsumerRepository implements iConsumerRepository
             $userType = $user->user_type;
 
             $mConsumer = new Consumer();
-    
+
             if (!$user || $userType !== 'Citizen') {
                 return response()->json(['status' => false, 'msg' => 'Unauthorized access'], 404);
             }
-    
+
             $request->validate([
                 'consumerId' => 'required|integer',
                 'transactionNo' => 'required|string'
             ]);
-    
+
             $consumerId = $request->consumerId;
             $consumer = $mConsumer->citizenPaymentBill($consumerId, $user->id);
-    
+
             if (!$consumer) {
                 return response()->json(['status' => false, 'msg' => 'Citizen not found'], 404);
             }
-    
-            return response()->json([ "status" => true, "message" => "Demand Details", "data" => $consumer], 200);
-    
+
+            return response()->json(["status" => true, "message" => "Demand Details", "data" => $consumer], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
-    } 
-    
+    }
+    /**
+     * | Send otp for caretaker property
+     */
+    public function swmCaretakerOtp(Request $req)
+    {
+        try {
+            $user                       = Auth()->user();
+            $userId                     = $user->id;
+            $ThirdPartyController       = new ThirdPartyController();
+            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
+            $mSwmConsumer               = new Consumer();
 
+            $swmDtl = $mSwmConsumer->getConsumerByNo($req->consumerNo);
+            if (!isset($swmDtl))
+                throw new Exception('swm Connection Not Found!');
+
+            $existingData = $mActiveCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
+            if (!is_null($existingData))
+                throw new Exception("Consumer No. caretaker already exist!");
+
+            $applicantMobile = $swmDtl->mobile_no;
+            $myRequest = new \Illuminate\Http\Request();
+            $myRequest->setMethod('POST');
+            $myRequest->request->add(['mobileNo' => $applicantMobile]);
+            $otpResponse = $ThirdPartyController->sendOtp($myRequest);
+
+            $response = collect($otpResponse)->toArray();
+            $data = [
+                'otp' => $response['original']['data'],
+                'mobileNo' => $applicantMobile
+            ];
+            return response()->json(["status" => true, "message" => "OTP send successfully", "data" => $data], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * | Care taker property tag
+     */
+    public function caretakerConsumerTag(Request $req)
+    {
+        $validated = Validator::make(
+            $req->all(),
+            [
+                'consumerNo' => 'required|max:255',
+                'otp' => 'required|digits:6'
+            ]
+        );
+
+        try {
+            $users                      = Auth()->user();
+            $userId                     = $users->id;
+            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
+            $mSwmConsumer               = new Consumer();
+            $ThirdPartyController       = new ThirdPartyController();
+
+            DB::beginTransaction();
+            $swmDtl = $mSwmConsumer->getConsumerByNo($req->consumerNo);
+            if (!isset($swmDtl))
+                throw new Exception('swm Connection Not Found!');
+            $myRequest = new \Illuminate\Http\Request();
+            $myRequest->setMethod('POST');
+            $myRequest->request->add(['mobileNo' => $swmDtl->mobile_no]);
+            $myRequest->request->add(['otp' => $req->otp]);
+            $otpReturnData = $ThirdPartyController->verifyOtp($myRequest);
+            $verificationStatus = collect($otpReturnData)['original']['status'];
+            if ($verificationStatus == false)
+                throw new Exception("otp Not Validated!");
+
+            $existingData = $mActiveCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
+            if (!is_null($existingData))
+                throw new Exception("ConsumerNo caretaker already exist!");
+
+            $mActiveCitizenUndercare->saveCaretakeDetails($swmDtl->id, $swmDtl->mobile_no, $userId);
+            DB::commit();
+            return response()->json(["status" => true, "message" => "Consumer Succesfully Attached!"], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        }
+    }
+    /**
+     * | View details of the caretaken swm connection
+     * | using user id
+        | Working
+        | Serial No : 07
+     */
+    public function viewCaretakenConnection(Request $request)
+    {
+        try {
+            $mSwmConsumer               = new Consumer();
+            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
+
+            $connectionDetails = $mActiveCitizenUndercare->getDetailsByCitizenId();
+            $checkDemand = collect($connectionDetails)->first();
+            if (is_null($checkDemand))
+                throw new Exception("Under taken data not found!");
+
+            $consumerIds = collect($connectionDetails)->pluck('swm_id');
+            $consumerDetails = $mSwmConsumer->getConsumerByIdsv1($consumerIds)->get();
+            $checkConsumer = collect($consumerDetails)->first();
+            if (is_null($checkConsumer)) {
+                throw new Exception("Consuemr Details Not Found!");
+            }
+            return response()->json(["status" => true, "message" => "List of undertaken water connections!!", "data" => $consumerDetails], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        }
+    }
 }

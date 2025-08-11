@@ -122,4 +122,11 @@ interface iConsumerRepository
     public function citizenCalculatedAmount(Request $request);
 
     public function generateCitizenOrder(Request $request);
+
+    public function swmCaretakerOtp(Request $request);
+
+    public function caretakerConsumerTag(Request $request);
+
+    public function viewCaretakenConnection(Request $request);
+
 }
