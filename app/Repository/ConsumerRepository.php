@@ -215,6 +215,111 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
         }
     }
+    public function ConsumerListv1(Request $request)
+    {
+
+        // $user = Auth()->user();
+        $ulbId = $request->ulbId ?? 2;
+        try {
+            $conArr = array();
+            if (isset($request->id) || isset($request->consumerNo) || isset($request->consumerName) || isset($request->mobileNo)) {
+                if (isset($request->id)) {
+                    $field = 'swm_consumers.id';
+                    $operator = '=';
+                    $value = $request->id;
+                }
+
+                if (isset($request->consumerNo)) {
+                    $field = 'consumer_no';
+                    $operator = '=';
+                    $value = $request->consumerNo;
+                }
+
+                if (isset($request->consumerName)) {
+                    $field = 'swm_consumers.name';
+                    $operator = 'like';
+                    $value = '%' . $request->consumerName . '%';
+                }
+
+                if (isset($request->mobileNo)) {
+                    $field = 'mobile_no';
+                    $operator = '=';
+                    $value = $request->mobileNo;
+                }
+
+                $consumerList = $this->Consumer->join('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
+                    ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
+                    ->select(DB::raw('swm_consumers.*, swm_consumer_categories.name as category, swm_consumer_types.name as type'))
+                    ->where('swm_consumers.ulb_id', $ulbId);
+                if (isset($request->wardNo))
+                    $consumerList = $consumerList->where('ward_no', $request->wardNo);
+                $consumerList = $consumerList->where($field, $operator, $value)
+                    ->orderBy('swm_consumers.id', 'DESC')
+                    ->paginate(
+                        $perPage = 1000,
+                        $columns = ['*'],
+                        $pageName = 'consumers'
+                    );
+
+                //echo "<pre/>";print_r($consumerList);
+                foreach ($consumerList as $consumer) {
+                    $demand = $this->Demand->where('consumer_id', $consumer->id)
+                        ->where('paid_status', 0)
+                        ->where('is_deactivate', 0)
+                        ->where('ulb_id', $ulbId)
+                        ->orderBy('payment_from', 'asc')
+                        ->get();
+                    $total_tax = 0.00;
+                    $demand_upto = '';
+                    $paid_status = 'Paid';
+                    $monthlyDemand = 0;
+                    $demand_form = '';
+                    $i = 0;
+
+                    $trans = $this->Transaction->where('consumer_id', $consumer->id)->count('*');
+
+                    foreach ($demand as $dmd) {
+                        if ($i == 0)
+                            $demand_form = date('d-m-Y', strtotime($dmd->payment_from));
+                        $i++;
+                        $demand_upto = date('d-m-Y', strtotime($dmd->payment_to));
+                        $monthlyDemand = $dmd->total_tax;
+                        $total_tax += $dmd->total_tax;
+                        $paid_status = 'Unpaid';
+                    }
+                    //
+
+                    $con['id'] = $consumer->id;
+                    $con['wardNo'] = $consumer->ward_no;
+                    $con['consumerName'] = $consumer->name;
+                    $con['apartmentId'] = $consumer->apartment_id;
+                    $con['consumerNo'] = $consumer->consumer_no;
+                    $con['holdingNo'] = $consumer->holding_no;
+                    $con['Address'] = $consumer->address;
+                    $con['pinCode'] = $consumer->pincode;
+                    $con['cansumerCategory'] = $consumer->category;
+                    $con['cansumerType'] = $consumer->type;
+                    $con['mobileNo'] = $consumer->mobile_no;
+                    $con['activeDemandDetails'] = $demand;
+                    $con['monthlyDemand'] = $monthlyDemand;
+                    $con['totalDemand'] = $total_tax;
+                    $con['demandFrom'] = $demand_form;
+                    $con['demandUpto'] = $demand_upto;
+                    $con['paidStatus'] = $paid_status;
+                    $con['applyBy'] = ($consumer->user_id);
+                    $con['applyDate'] = date("d-m-Y", strtotime($consumer->entry_date));
+                    $con['status'] = ($consumer->is_deactivate == 0) ? 'Active' : 'Deactive';
+                    $con['editApplicable'] = ($trans == 0) ? true : false;
+                    $conArr[] = $con;
+                }
+                return response()->json(['status' => True, 'data' => $conArr, 'msg' => ''], 200);
+            } else {
+                return response()->json(['status' => False, 'data' => $conArr, 'msg' => 'Undefined parameter supply'], 200);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
 
     public function ApartmentList(Request $request)
     {

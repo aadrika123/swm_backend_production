@@ -13,6 +13,8 @@ interface iConsumerRepository
 {
     public function ConsumerList(Request $request);
 
+    public function ConsumerListv1(Request $request);
+
     public function ApartmentList(Request $request);
 
     public function getApartmentDetails(Request $request);

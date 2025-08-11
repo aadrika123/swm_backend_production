@@ -33,6 +33,16 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->ConsumerList($req);
     }
+    /**
+     * Get consumer list according to mobile no or name.
+     *
+     * @param  $id, $consumerNo, $consumerName, $mobileNo
+     * @return ConsumerRepository->ConsumerList
+     */
+    public function GetConsumerListv1(Request $req)
+    {
+        return $this->ConResp->ConsumerListv1($req);
+    }
 
 
 
