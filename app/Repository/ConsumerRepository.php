@@ -4751,9 +4751,9 @@ class ConsumerRepository implements iConsumerRepository
                 'totalRebate'           => 0,                                                       // Static
                 'remaningAdvanceAmount' => $renmaningAmount
             ];
-            return responseMsgs(true, "Amount Details!", remove_null($returnData), "", "01", ".ms", "POST", $request->deviceId);
+            return response()->json(["status" => true, "message" => "List of undertaken Swm connections!!", "data" => $returnData], 200);
         } catch (Exception $e) {
-            return responseMsgs(false, $e->getMessage(), "", "", "01", ".ms", "POST", $request->deviceId);
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
     }
     /**
