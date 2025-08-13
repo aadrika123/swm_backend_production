@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Http\Requests\reqDemandPayment;
 use Illuminate\Http\Request;
 
 /**
@@ -131,4 +132,11 @@ interface iConsumerRepository
 
     public function viewCaretakenConnection(Request $request);
 
+    public function viewCaretakenConnectionWithDemand(Request $request);
+
+    public function initiateOnlineDemandPayment(reqDemandPayment $request);
+
+    public function paymentSuccessOrFailure(Request $request);
+
+    public function callDemandByMonth(Request $request);
 }

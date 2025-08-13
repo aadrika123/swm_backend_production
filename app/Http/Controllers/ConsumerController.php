@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\reqDemandPayment;
 use Illuminate\Http\Request;
 use App\Repository\iConsumerRepository;
 
@@ -680,7 +681,7 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->CitizenList($req);
     }
-    
+
     public function CitizenAllDetails(Request $req)
     {
         return $this->ConResp->CitizenAllDetails($req);
@@ -714,10 +715,41 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->caretakerConsumerTag($req);
     }
+
     public function viewCaretakenConnection(Request $req)
     {
         return $this->ConResp->viewCaretakenConnection($req);
     }
-}
-    
 
+    /**
+     * view caretaken connection with demand
+     *
+     * @param  $request
+     * @return ConsumerRepository->viewCaretakenConnectionWithDemand
+     */
+    public function viewCaretakenConnectionWithDemand(Request $req)
+    {
+        return $this->ConResp->viewCaretakenConnectionWithDemand($req);
+    }
+
+    /**
+     * initiate online payment 
+     * created by Arshad Hussain on 12-08-2021
+     * @param  $request
+     * @return ConsumerRepository->initiateOnlinePayment
+     */
+    public function initiateOnlineDemandPayment(reqDemandPayment $req)
+    {
+        return $this->ConResp->initiateOnlineDemandPayment($req);
+    }
+
+    public function paymentSuccessOrFailure(Request $req)
+    {
+        return $this->ConResp->paymentSuccessOrFailure($req);
+    }
+
+    public function callDemandByMonth(Request $req)
+    {
+        return $this->ConResp->callDemandByMonth($req);
+    }
+}

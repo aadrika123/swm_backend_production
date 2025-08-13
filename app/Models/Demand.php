@@ -19,4 +19,14 @@ class Demand extends Model
         //$this->connection = Session::get('ulb');
         $this->connection = $data;
     }
+
+       /**
+     * | Get Demand According to consumerId and payment status false 
+     */
+    public function getFirstConsumerDemand($consumerId)
+    {
+        return Demand::where('consumer_id', $consumerId)
+            ->where('paid_status', 0)
+            ->orderByDesc('id');
+    }
 }

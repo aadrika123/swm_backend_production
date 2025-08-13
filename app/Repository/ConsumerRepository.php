@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Http\Controllers\ThirdPartyController;
+use App\Http\Requests\reqDemandPayment;
 use App\Models\ActiveCitizenUndercare;
 use App\Models\RazorpayReq;
 // use App\Repository\Config;
@@ -27,6 +28,7 @@ use App\Models\BankCancelDetails;
 use App\Models\PaymentDeny;
 use App\Models\DemandLog;
 use App\Models\DemandAdjustment;
+use App\Models\RazorpayResponse;
 use App\Models\TcComplaint;
 use App\Models\Routes;
 use Exception;
@@ -35,12 +37,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\Api\Helpers;
+use App\Traits\Api\Razorpay;
 use PhpOption\None;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
 use Razorpay\Api\Api;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 /**
  * | Created On-08-09-2022 
@@ -1477,7 +1481,10 @@ class ConsumerRepository implements iConsumerRepository
                 $transcationDate = date('Y-m-d');
                 $date_time = date("Y-m-d H:i:s");
                 $paidUpto = date('Y-m-d', strtotime($request->paidUpto));
-                $getTc = $this->GetUserDetails($userId, $this->masterConnection);
+                if ($user->user_type != 'Citizen') {
+                    $getTc = $this->GetUserDetails($userId, $this->masterConnection);
+                }
+
 
                 $consumer = $this->Consumer->select('swm_consumers.*', 'a.apt_name', 'a.apt_code', 'cc.name as category', 'ct.rate', 'apt_address', 'ct.name as consumer_type')
                     ->join('swm_consumer_categories as cc', 'swm_consumers.consumer_category_id', '=', 'cc.id')
@@ -1568,8 +1575,8 @@ class ConsumerRepository implements iConsumerRepository
                         $response['remainingAmount'] = $remainingAmt;
                         $response['paidUpto'] = $request->paidUpto;
                         $response['previousPaidAmount'] = ($lastpayment) ? $lastpayment->total_payable_amt : "0.00";
-                        $response['tcName'] = $getTc->name;
-                        $response['tcMobile'] = $getTc->contactno;
+                        $response['tcName'] = $getTc->name ?? $user->name;
+                        $response['tcMobile'] = $getTc->contactno ?? $user->mobile;
                         $response = array_merge($response, $this->GetUlbData($ulbId));
                         return response()->json(['status' => True, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
                     }
@@ -4501,9 +4508,277 @@ class ConsumerRepository implements iConsumerRepository
             if (is_null($checkConsumer)) {
                 throw new Exception("Consuemr Details Not Found!");
             }
-            return response()->json(["status" => true, "message" => "List of undertaken water connections!!", "data" => $consumerDetails], 200);
+            return response()->json(["status" => true, "message" => "List of undertaken Swm connections!!", "data" => $consumerDetails], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
         }
+    }
+    /**
+     * | View details of the caretaken swm connection
+     * | using user id
+        | Working
+        | Serial No : 07
+     */
+    public function viewCaretakenConnectionWithDemand(Request $request)
+    {
+        try {
+            $mSwmConsumer               = new Consumer();
+            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
+
+            $connectionDetails = $mActiveCitizenUndercare->getDetailsByCitizenId();
+            $checkDemand = collect($connectionDetails)->first();
+            if (is_null($checkDemand))
+                throw new Exception("Under taken data not found!");
+
+            $consumerIds = collect($connectionDetails)->pluck('swm_id');
+            $consumerDetails = $mSwmConsumer->getConsumerByIdsv2($consumerIds)->get();
+            $checkConsumer = collect($consumerDetails)->first();
+            if (is_null($checkConsumer)) {
+                throw new Exception("Consuemr Details Not Found!");
+            }
+            return response()->json(["status" => true, "message" => "List of undertaken Swm connections!!", "data" => $consumerDetails], 200);
+        } catch (Exception $e) {
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * | Initiate the online Demand payment Online
+     * | Get the details for order id 
+     * | Check the amount for the orderId
+        | Working
+        | Serial No : 10
+        | Collect the error occure while order id is generated
+     */
+    public function initiateOnlineDemandPayment(reqDemandPayment $request)
+    {
+        try {
+            $refUser        = Auth()->user();
+            $SwmModuleId  = Config::get('constants.MODULE_ID');
+            $paymentFor     = Config::get('constants.PAYMENT_FOR');
+            $startingDate   = Carbon::createFromFormat('Y-m-d',  $request->demandFrom)->startOfMonth();
+            $endDate        = Carbon::createFromFormat('Y-m-d',  $request->demandUpto)->endOfMonth();
+            $startingDate   = $startingDate->toDateString();
+            $endDate        = $endDate->toDateString();
+            // $url            = Config::get('razorpay.PAYMENT_GATEWAY_URL');
+            // $endPoint       = Config::get('razorpay.PAYMENT_GATEWAY_END_POINT');
+
+            # Demand Collection 
+            DB::beginTransaction();
+            $refDetails = $this->preOfflinePaymentParams($request, $startingDate, $endDate);
+            $myRequest = new Request([
+                'amount'        => $request->amount,
+                'workflowId'    => 0,                                                                   // Static
+                'id'            => $request->consumerId,
+                'departmentId'  => $SwmModuleId,
+                'ulbId'         => $refDetails['consumer']['ulb_id'],
+                'auth'          => $refUser
+            ]);
+            $paymentUrl = Config::get('constants.PAYMENT_URL');
+            $refResponse = Http::withHeaders([
+                "api-key" => "eff41ef6-d430-4887-aa55-9fcf46c72c99"
+            ])
+                ->withToken($request->bearerToken())
+                ->post($paymentUrl . 'api/payment/generate-orderid', $myRequest);
+
+            $data = json_decode($refResponse);
+
+            if (!$data)
+                throw new Exception("Payment Order Id Not Generate");
+            if ($data->status == false) {
+                return responseMsgs(false, collect($data->message)->first()[0] ?? $data->message, json_decode($refResponse), "110162", "1.0", "", 'POST', $req->deviceId ?? "");
+            }
+            $mRazorPayRequest = new RazorpayReq();
+            $mRazorPayRequest->saveRequestData($request, $paymentFor, $data, $refDetails);
+            DB::commit();
+
+            $temp['name']   = $refUser->user_name;
+            $temp['mobile'] = $refUser->mobile;
+            $temp['email']  = $refUser->email;
+            $temp['userId'] = $refUser->id;
+            $temp['ulbId']  = $refUser->ulb_id ?? $myRequest->ulbId;
+            $temp['ulbId']  = 2;
+            return responseMsgs(true, "Payment OrderId Generated Successfully !!!", $temp, "", "01", ".ms", "POST", $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "03", ".ms", "POST", $request->deviceId);
+        }
+    }
+
+    /**
+     * | Check the Condition before paymen
+     * | Check for the rounding of amount 
+     */
+    public function preOfflinePaymentParams($request, $startingDate, $endDate)
+    {
+        $mSwmConsumerDemand   = new Demand();
+        $mSwmConsumer         = new Consumer();
+        $consumerId             = $request->consumerId;
+        $refAmount              = $request->amount;
+
+        if ($startingDate > $endDate) {
+            throw new Exception("demandFrom Date should not be grater than demandUpto date!");
+        }
+        $refConsumer = $mSwmConsumer->getConsumerDetailById($consumerId);
+        if (!$refConsumer) {
+            throw new Exception("Consumer Not Found!");
+        }
+
+        # get charges according to respective from and upto date 
+        $allCharges = $mSwmConsumerDemand->getFirstConsumerDemand($consumerId)
+            ->where('payment_from', '>=', $startingDate)
+            ->where('payment_to', '<=', $endDate)
+            ->get();
+        $checkCharges = collect($allCharges)->last();
+        if (!$checkCharges->id || is_null($checkCharges)) {
+            throw new Exception("Charges for respective date doesn't exist!......");
+        }
+        // $totalPenalty = collect($allCharges)->sum('penalty');
+
+        # checking the advance amount 
+        $allunpaidCharges = $mSwmConsumerDemand->getFirstConsumerDemand($consumerId)
+            ->get();
+        $leftAmount = (collect($allunpaidCharges)->sum('total_tax') - collect($allCharges)->sum('total_tax'));
+        return [
+            "consumer"          => $refConsumer,
+            "consumerChages"    => $allCharges,
+            "leftDemandAmount"  => $leftAmount,
+            // "penaltyAmount"     => $totalPenalty
+        ];
+    }
+
+    /**
+     * | Payment Success or Failure of SWM
+     * | Function - 68
+     * | API - 68
+     */
+    public function paymentSuccessOrFailure(Request $req)
+    {
+        try {
+            $refUser = auth()->user();
+            $refUserId = $req->citizenId;
+
+            if (!empty($req->payment_order_id)) {
+
+                $msg = 'Payment processed successfully';
+                $mRazorpayResponse = new RazorpayResponse();
+
+                DB::beginTransaction();
+
+                // Check if the record exists
+                $RazorPayRequest = DB::table('razorpay_reqs')
+                    // ->where('id', $req->id)
+                    ->where('order_id', $req->payment_order_id)
+                    ->first();
+
+                if (!$RazorPayRequest) {
+                    throw new \Exception('Invalid payment request.');
+                }
+                $refDate = explode("--", $RazorPayRequest->demand_from_upto);
+                $startingYear = $refDate[0];
+                $paymentUpto = $refDate[1];
+
+                // Call makePayment
+                $req->merge([
+                    "isNotWebHook" => true,
+                    "paymentModes" => $req->paymentMode,
+                    "paymentMode"  => "ONLINE",
+                    "paidUpto"     => $paymentUpto,
+                    "paidAmount"   => $req->amount,
+                    "request_id"   => $RazorPayRequest->id
+
+                ]);
+
+                $paymentResponse = $this->makePayment($req);
+                $data = $paymentResponse->original["data"];
+
+                // Save payment response
+                $mRazorpayResponse->saveResponseData($req, $data);
+
+                // Update payment status
+                DB::table('razorpay_reqs')
+                    ->where('id', $req->id)
+                    ->update(['payment_status' => 1]);
+
+                DB::commit();
+
+                return responseMsgs(true, $msg, "", '110168', 01, responseTime(), 'POST', $req->deviceId);
+            }
+
+            throw new \Exception('Missing orderId or paymentId');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), "", '110168', 01, "", 'POST', $req->deviceId);
+        }
+    }
+
+    /**
+     * | Calculate the Demand for the respective Consumer
+     */
+    public function callDemandByMonth(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'consumerId' => 'required',
+                'demandFrom' => 'required|date|date_format:Y-m-d',
+                'demandUpto' => 'required|date|date_format:Y-m-d',
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+        try {
+            $startingDate   = Carbon::createFromFormat('Y-m-d',  $request->demandFrom)->startOfMonth();
+            $endDate        = Carbon::createFromFormat('Y-m-d',  $request->demandUpto)->endOfMonth();
+            $startingDate   = $startingDate->toDateString();
+            $endDate        = $endDate->toDateString();
+
+            $collectiveCharges = $this->checkCallParams($request, $startingDate, $endDate);
+
+            $totalPaymentAmount  = collect($collectiveCharges)->pluck('total_tax')->sum();
+            $actualCallAmount = $totalPaymentAmount;
+            if ($actualCallAmount < 0) {
+                $totalPayAmount = 0;                                                                // Static
+                $renmaningAmount = $actualCallAmount * -1;
+            } else {
+                $totalPayAmount = $actualCallAmount;
+                $renmaningAmount = 0;                                                               // Static
+            }
+
+            $returnData = [
+                'totalPayAmount'        => $totalPayAmount,
+                'totalDemand'           => collect($collectiveCharges)->pluck('amount')->sum(),
+                'totalRebate'           => 0,                                                       // Static
+                'remaningAdvanceAmount' => $renmaningAmount
+            ];
+            return responseMsgs(true, "Amount Details!", remove_null($returnData), "", "01", ".ms", "POST", $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), "", "", "01", ".ms", "POST", $request->deviceId);
+        }
+    }
+    /**
+     * | calling functon for checking params for callculating demand according to month
+     */
+    public function checkCallParams($request, $startingDate, $endDate)
+    {
+        $mSwmConsumerDemand = new Demand();
+        if ($startingDate > $endDate) {
+            throw new Exception("'demandFrom' date should not be grater than 'demandUpto' date!");
+        }
+        $consumerDetails = Consumer::find($request->consumerId);
+        if (!$consumerDetails) {
+            throw new Exception("Consumer dont exist!");
+        }
+
+        # get demand by (upto and from) date 
+        $allCharges = $mSwmConsumerDemand->getFirstConsumerDemand($request->consumerId)
+            ->where('payment_from', '>=', $startingDate)
+            ->where('payment_to', '<=', $endDate)
+            ->get();
+        $checkDemand = collect($allCharges)->first();
+        if (!$checkDemand || is_null($checkDemand)) {
+            throw new Exception("Demand according to given date not found!");
+        }
+        return $allCharges;
     }
 }
