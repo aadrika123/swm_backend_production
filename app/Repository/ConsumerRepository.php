@@ -4524,7 +4524,7 @@ class ConsumerRepository implements iConsumerRepository
             $mSwmConsumer               = new Consumer();
             $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
 
-            $connectionDetails = $mActiveCitizenUndercare->getDetailsByCitizenId();
+            $connectionDetails = $mActiveCitizenUndercare->getDetailsByCitizenId($request);
             $checkDemand = collect($connectionDetails)->first();
             if (is_null($checkDemand))
                 throw new Exception("Under taken data not found!");
