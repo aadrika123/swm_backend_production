@@ -4600,9 +4600,12 @@ class ConsumerRepository implements iConsumerRepository
             $temp['ulbId']  = $refDetails['consumer']['ulb_id'] ?? $myRequest->ulbId;
             $temp['orderId']  = $data->data->orderId;
             $temp['departmentId']  = 17;
-            $temp['amount']  =$request->amount;
-            $temp['demandFrom']  =$request->demandFrom;
-            $temp['demandUpto']  =$request->demandUpto;
+            $temp['amount']  = $request->amount;
+            $temp['demandFrom']  = $request->demandFrom;
+            $temp['demandUpto']  = $request->demandUpto;
+            $temp['applicationId']  = $request->consumerId;
+            $temp['payment_method']  = "ONLINE";
+            $temp['workflow_id']  = 0; // Static
             return responseMsgs(true, "Payment OrderId Generated Successfully !!!", $temp, "", "01", ".ms", "POST", $request->deviceId);
         } catch (Exception $e) {
             DB::rollBack();
