@@ -41,6 +41,21 @@ class ActiveCitizenUndercare extends Model
      */
     public function getDetailsByCitizenId($request)
     {
+        $user = Auth()->user();
+        // $user = 36;
+        if (!$user) {
+            throw new Exception("User Details Not found!");
+        }
+        return ActiveCitizenUndercare::where('citizen_id', $user->id)
+            ->where('deactive_status', false)
+            ->get();
+    }
+    /**
+     * | Get Details according to user Id
+     * | @param 
+     */
+    public function getDetailsByCitizenIdv1($request)
+    {
         return ActiveCitizenUndercare::where('citizen_id', $request->userId)
             ->where('deactive_status', false)
             ->get();
