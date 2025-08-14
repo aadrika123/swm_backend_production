@@ -39,7 +39,7 @@ class ActiveCitizenUndercare extends Model
      * | Get Details according to user Id
      * | @param 
      */
-    public function getDetailsByCitizenId($request)
+    public function getDetailsByCitizenId()
     {
         $user = Auth()->user();
         // $user = 36;
