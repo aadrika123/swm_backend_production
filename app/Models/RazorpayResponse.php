@@ -20,7 +20,7 @@ class RazorpayResponse extends Model
     {
         $razorpay_response = new RazorpayResponse();
         $razorpay_response->request_id       = $req['request_id'];
-        $razorpay_response->order_id         = $req['payment_order_id'];
+        $razorpay_response->order_id         = $req['orderId'];
         $razorpay_response->consumer_id      = $req['consumerId'];
         $razorpay_response->amount           = $req['amount'];
         $razorpay_response->ulb_id           = $req['ulb_id'] ?? 11;
