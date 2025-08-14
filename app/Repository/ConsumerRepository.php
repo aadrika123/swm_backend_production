@@ -4659,7 +4659,7 @@ class ConsumerRepository implements iConsumerRepository
             $refUser = auth()->user();
             $refUserId = $req->citizenId;
 
-            if (!empty($req->payment_order_id)) {
+            if (!empty($req->orderId)) {
 
                 $msg = 'Payment processed successfully';
                 $mRazorpayResponse = new RazorpayResponse();
@@ -4669,7 +4669,7 @@ class ConsumerRepository implements iConsumerRepository
                 // Check if the record exists
                 $RazorPayRequest = DB::table('razorpay_reqs')
                     // ->where('id', $req->id)
-                    ->where('order_id', $req->payment_order_id)
+                    ->where('order_id', $req->orderId)
                     ->first();
 
                 if (!$RazorPayRequest) {
