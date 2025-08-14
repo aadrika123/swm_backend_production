@@ -205,6 +205,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
 Route::controller(ConsumerController::class)->group(function () {
     // Route::post('postPayment', 'MakePayment');
     Route::post('swm/getReprintData-v2', 'getReprintDatav2');
+    Route::post('swm/getReprintData-v3', 'getReprintDatav3');
     Route::get('swm/getConsumerDetailsByIdv1/{id}', 'GetConsumerListv1');
 });
 

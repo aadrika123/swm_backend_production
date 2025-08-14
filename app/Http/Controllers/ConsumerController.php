@@ -752,4 +752,9 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->callDemandByMonth($req);
     }
+
+    public function getReprintDatav3(Request $req)
+    {
+        return $this->ConResp->GetReprintDatav3($req);
+    }
 }

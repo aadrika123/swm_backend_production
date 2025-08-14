@@ -139,4 +139,6 @@ interface iConsumerRepository
     public function paymentSuccessOrFailure(Request $request);
 
     public function callDemandByMonth(Request $request);
+
+    public function GetReprintDatav3(Request $request);
 }
