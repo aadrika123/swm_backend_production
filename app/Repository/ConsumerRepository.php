@@ -4648,70 +4648,144 @@ class ConsumerRepository implements iConsumerRepository
         ];
     }
 
-    /**
-     * | Payment Success or Failure of SWM
-     * | Function - 68
-     * | API - 68
-     */
+    // /**
+    //  * | Payment Success or Failure of SWM
+    //  * | Function - 68
+    //  * | API - 68
+    //  */
+    // public function paymentSuccessOrFailure(Request $req)
+    // {
+    //     try {
+    //         // $refUser = auth()->user();
+    //         $refUserId = $req->citizenId;
+
+    //         if (!empty($req->orderId)) {
+
+    //             $msg = 'Payment processed successfully';
+    //             $mRazorpayResponse = new RazorpayResponse();
+
+    //             DB::beginTransaction();
+
+    //             // Check if the record exists
+    //             $RazorPayRequest = DB::table('razorpay_reqs')
+    //                 // ->where('id', $req->id)
+    //                 ->where('order_id', $req->orderId)
+    //                 ->first();
+
+    //             if (!$RazorPayRequest) {
+    //                 throw new \Exception('Invalid payment request.');
+    //             }
+    //             $refDate = explode("--", $RazorPayRequest->demand_from_upto);
+    //             $startingYear = $refDate[0];
+    //             $paymentUpto = $refDate[1];
+
+    //             // Call makePayment
+    //             $req->merge([
+    //                 "isNotWebHook" => true,
+    //                 "paymentModes" => $req->paymentMode,
+    //                 "paymentMode"  => "ONLINE",
+    //                 "paidUpto"     => $paymentUpto,
+    //                 "paidAmount"   => $req->amount,
+    //                 "request_id"   => $RazorPayRequest->id,
+    //                 "consumerId"   => $RazorPayRequest->consumer_id,
+    //                 "ulb_id"       => $req->ulb_id,
+    //                 "user_id"      => $req->user_id ,
+
+    //             ]);
+
+    //             $paymentResponse = $this->makePaymentv1($req);
+    //             $data = $paymentResponse->original["data"];
+
+    //             // Save payment response
+    //             $mRazorpayResponse->saveResponseData($req, $data);
+
+    //             // Update payment status
+    //             DB::table('razorpay_reqs')
+    //                 ->where('id', $req->id)
+    //                 ->update(['payment_status' => 1]);
+
+    //             DB::commit();
+
+    //             return responseMsgs(true, $msg, $data, '110168', 01, responseTime(), 'POST', $req->deviceId);
+    //         }
+
+    //         throw new \Exception('Missing orderId or paymentId');
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return responseMsgs(false, $e->getMessage(), "", '110168', 01, "", 'POST', $req->deviceId);
+    //     }
+    // }
+
     public function paymentSuccessOrFailure(Request $req)
     {
         try {
-            $refUser = auth()->user();
-            $refUserId = $req->citizenId;
+            // Validate required parameters first
+            if (empty($req->orderId)) {
+                throw new \Exception('Missing orderId');
+            }
 
-            if (!empty($req->orderId)) {
+            // Fetch payment request record (outside transaction)
+            $RazorPayRequest = DB::table('razorpay_reqs')
+                ->where('order_id', $req->orderId)
+                ->first();
 
-                $msg = 'Payment processed successfully';
+            if (!$RazorPayRequest) {
+                throw new \Exception('Invalid payment request.');
+            }
+
+            // Extract additional info
+            $refDate = explode("--", $RazorPayRequest->demand_from_upto);
+            $startingYear = $refDate[0] ?? null;
+            $paymentUpto  = $refDate[1] ?? null;
+
+            // Prepare request data for makePayment
+            $req->merge([
+                "isNotWebHook" => true,
+                "paymentModes" => $req->paymentMode,
+                "paymentMode"  => "ONLINE",
+                "paidUpto"     => $paymentUpto,
+                "paidAmount"   => $req->amount,
+                "request_id"   => $RazorPayRequest->id,
+                "consumerId"   => $RazorPayRequest->consumer_id,
+                "ulb_id"       => $req->ulbId,
+                "user_id"      => $req->userId,
+            ]);
+
+            // Call API BEFORE transaction
+            $paymentResponse = $this->makePaymentv1($req);
+
+            if (
+                !isset($paymentResponse->original["status"]) ||
+                $paymentResponse->original["status"] !== true
+            ) {
+                throw new \Exception('Payment processing failed.');
+            }
+
+            $data = $paymentResponse->original["data"] ?? [];
+
+            // DB transaction for saving records
+            DB::beginTransaction();
+
+            try {
                 $mRazorpayResponse = new RazorpayResponse();
-
-                DB::beginTransaction();
-
-                // Check if the record exists
-                $RazorPayRequest = DB::table('razorpay_reqs')
-                    // ->where('id', $req->id)
-                    ->where('order_id', $req->orderId)
-                    ->first();
-
-                if (!$RazorPayRequest) {
-                    throw new \Exception('Invalid payment request.');
-                }
-                $refDate = explode("--", $RazorPayRequest->demand_from_upto);
-                $startingYear = $refDate[0];
-                $paymentUpto = $refDate[1];
-
-                // Call makePayment
-                $req->merge([
-                    "isNotWebHook" => true,
-                    "paymentModes" => $req->paymentMode,
-                    "paymentMode"  => "ONLINE",
-                    "paidUpto"     => $paymentUpto,
-                    "paidAmount"   => $req->amount,
-                    "request_id"   => $RazorPayRequest->id
-
-                ]);
-
-                $paymentResponse = $this->makePayment($req);
-                $data = $paymentResponse->original["data"];
-
-                // Save payment response
                 $mRazorpayResponse->saveResponseData($req, $data);
 
-                // Update payment status
                 DB::table('razorpay_reqs')
-                    ->where('id', $req->id)
+                    ->where('id', $RazorPayRequest->id)
                     ->update(['payment_status' => 1]);
 
                 DB::commit();
-
-                return responseMsgs(true, $msg, "", '110168', 01, responseTime(), 'POST', $req->deviceId);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e; // rethrow for outer catch
             }
 
-            throw new \Exception('Missing orderId or paymentId');
+            return responseMsgs(true, 'Payment processed successfully', $data, '110168', 1, responseTime(), 'POST', $req->deviceId);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return responseMsgs(false, $e->getMessage(), "", '110168', 01, "", 'POST', $req->deviceId);
+            return responseMsgs(false, $e->getMessage(), "", '110168', 1, "", 'POST', $req->deviceId);
         }
     }
+
 
     /**
      * | Calculate the Demand for the respective Consumer
@@ -4781,5 +4855,266 @@ class ConsumerRepository implements iConsumerRepository
             throw new Exception("Demand according to given date not found!");
         }
         return $allCharges;
+    }
+
+    // public function makePaymentv1(Request $request)
+    // {
+
+    //     try {
+    //         if (isset($request->consumerId)) {
+
+    //             $ulbId = $request->ulb_id;
+    //             $userId = $request->user_id;
+    //             $consumerId = $request->consumerId;
+    //             $totalPayableAmt = $request->paidAmount;
+    //             $transcationDate = date('Y-m-d');
+    //             $date_time = date("Y-m-d H:i:s");
+    //             $paidUpto = date('Y-m-d', strtotime($request->paidUpto));
+    //             // if ($user->user_type != 'Citizen') {
+    //             //     $getTc = $this->GetUserDetails($userId, $this->masterConnection);
+    //             // }
+
+
+    //             $consumer = $this->Consumer->select('swm_consumers.*', 'a.apt_name', 'a.apt_code', 'cc.name as category', 'ct.rate', 'apt_address', 'ct.name as consumer_type')
+    //                 ->join('swm_consumer_categories as cc', 'swm_consumers.consumer_category_id', '=', 'cc.id')
+    //                 ->join('swm_consumer_types as ct', 'swm_consumers.consumer_type_id', '=', 'ct.id')
+    //                 ->leftjoin('swm_apartments as a', 'swm_consumers.apartment_id', '=', 'a.id')
+    //                 ->where('swm_consumers.id', $consumerId)
+    //                 ->where('swm_consumers.ulb_id', $ulbId)
+    //                 ->first();
+
+    //             $totalDemandAmt = $this->Demand->where('consumer_id', $consumerId)
+    //                 ->where('paid_status', 0)
+    //                 ->where('is_deactivate', 0)
+    //                 ->where('ulb_id', $ulbId)
+    //                 ->sum('total_tax');
+
+    //             $remainingAmt = $totalDemandAmt - $totalPayableAmt;
+
+
+    //             $transcation = $this->Transaction->where('consumer_id', $consumerId)->where('ulb_id', $ulbId);
+
+    //             $lastpayment = $transcation->select('total_payable_amt')->where('paid_status', '1')->orderBy('id', 'desc')->first();
+
+    //             $transcation = $transcation->whereDate('transaction_date', '=', $transcationDate)
+    //                 ->where('total_payable_amt', $totalPayableAmt)
+    //                 ->get();
+    //             $paidStatus = 1;
+
+    //             if ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd')
+    //                 $paidStatus = 2;
+
+    //             //if($transcation->count() == 0 && $totalPayableAmt > 0 )    
+    //             if ($totalPayableAmt > 0) {
+    //                 $trans = $this->Transaction;
+    //                 $trans->transaction_date = $transcationDate;
+    //                 $trans->total_demand_amt = $totalDemandAmt;
+    //                 $trans->total_payable_amt = $totalPayableAmt;
+    //                 $trans->total_remaining_amt = $remainingAmt;
+    //                 $trans->payment_mode = $request->paymentMode;
+    //                 $trans->paid_status = $paidStatus;
+    //                 $trans->consumer_id = $consumerId;
+    //                 $trans->user_id = $userId;
+    //                 $trans->ip_address = $request->ip();
+    //                 $trans->stampdate = $date_time;
+    //                 $trans->ulb_id = $ulbId;
+    //                 $trans->save();
+
+    //                 if ($trans->id > 0) {
+    //                     $trans->transaction_no = date("dmY") . $trans->id;
+    //                     $trans->save();
+
+    //                     if ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd') {
+    //                         $transdtls = $this->TransactionDetails;
+    //                         $transdtls->transaction_id = $trans->id;
+    //                         $transdtls->bank_name = $request->bankName;
+    //                         $transdtls->branch_name = $request->branchName;
+    //                         $transdtls->cheque_dd_no = $request->chequeNo;
+    //                         $transdtls->cheque_dd_date = date('Y-m-d', strtotime($request->chequeDate));
+    //                         $transdtls->save();
+    //                     }
+
+    //                     $sql = "INSERT INTO swm_collections (consumer_id, demand_id, transaction_id, total_tax, payment_from, payment_to, user_id, stampdate, ulb_id)
+    //                     SELECT consumer_id, id, '" . $trans->id . "', total_tax, payment_from, payment_to, '" . $userId . "', '" . $date_time . "', " . $ulbId . " FROM swm_demands 
+    //                     WHERE consumer_id='$consumerId' and (payment_to <='" . $paidUpto . "') and paid_status='0' and ulb_id=" . $ulbId;
+
+    //                     DB::connection($this->dbConn)->select($sql);
+
+    //                     $this->Demand->where('consumer_id', $consumerId)
+    //                         ->where('payment_to', '<=', $paidUpto)
+    //                         ->where('ulb_id', $ulbId)
+    //                         ->update(['paid_status' => 1]);
+
+    //                     $response['consumerName'] = $consumer->name;
+    //                     $response['consumerCategory'] = ($consumer->category) ? $consumer->category : 'RESIDENTIAL';
+    //                     $response['consumerType'] = $consumer->consumer_type;
+    //                     $response['consumerNo'] = $consumer->consumer_no;
+    //                     $response['apartmentName'] = $consumer->apt_name;
+    //                     $response['apartmentCode'] = $consumer->apt_code;
+    //                     $response['address'] = ($consumer->apt_address) ? $consumer->apt_address : $consumer->address;
+    //                     $response['transactionId'] = $trans->id;
+    //                     $response['transactionDate'] = $transcationDate;
+    //                     $response['transactionTime'] =  date("h:i A");
+    //                     $response['transactionNo'] = date("dmY") . $trans->id;
+    //                     $response['holdingNo'] = $consumer->holding_no;
+    //                     $response['mobileNo'] = $consumer->mobile_no;
+    //                     $response['monthlyRate'] = $consumer->rate;
+    //                     $response['demandAmount'] = $totalDemandAmt;
+    //                     $response['receivedAmount'] = $totalPayableAmt;
+    //                     $response['remainingAmount'] = $remainingAmt;
+    //                     $response['paidUpto'] = $request->paidUpto;
+    //                     $response['previousPaidAmount'] = ($lastpayment) ? $lastpayment->total_payable_amt : "0.00";
+    //                     // $response['tcName'] = $getTc->name ?? $user->name;
+    //                     // $response['tcMobile'] = $getTc->contactno ?? $user->mobile;
+    //                     // $response = array_merge($response, $this->GetUlbData($ulbId));
+    //                     return response()->json(['status' => True, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
+    //                 }
+    //             }
+    //             // else{
+    //             //     return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'This user payment today not updated..'], 200);
+    //             // }
+    //         }
+    //     } catch (Exception $e) {
+    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
+    //     }
+    // }
+
+    public function makePaymentv1(Request $request)
+    {
+        try {
+            if (!isset($request->consumerId)) {
+                return response()->json(['status' => false, 'data' => '', 'msg' => 'Missing consumerId'], 400);
+            }
+
+            $ulbId        = $request->ulb_id;
+            $userId       = $request->user_id;
+            $consumerId   = $request->consumerId;
+            $totalPayableAmt = $request->paidAmount;
+            $transcationDate = date('Y-m-d');
+            $date_time    = date("Y-m-d H:i:s");
+            $paidUpto     = date('Y-m-d', strtotime($request->paidUpto));
+
+            // Fetch consumer details
+            $consumer = $this->Consumer
+                ->select('swm_consumers.*', 'a.apt_name', 'a.apt_code', 'cc.name as category', 'ct.rate', 'apt_address', 'ct.name as consumer_type')
+                ->join('swm_consumer_categories as cc', 'swm_consumers.consumer_category_id', '=', 'cc.id')
+                ->join('swm_consumer_types as ct', 'swm_consumers.consumer_type_id', '=', 'ct.id')
+                ->leftjoin('swm_apartments as a', 'swm_consumers.apartment_id', '=', 'a.id')
+                ->where('swm_consumers.id', $consumerId)
+                ->where('swm_consumers.ulb_id', $ulbId)
+                ->first();
+
+            if (!$consumer) {
+                throw new \Exception("Consumer not found");
+            }
+
+            $totalDemandAmt = $this->Demand
+                ->where('consumer_id', $consumerId)
+                ->where('paid_status', 0)
+                ->where('is_deactivate', 0)
+                ->where('ulb_id', $ulbId)
+                ->sum('total_tax');
+
+            $remainingAmt = $totalDemandAmt - $totalPayableAmt;
+
+            $transcationQuery = $this->Transaction
+                ->where('consumer_id', $consumerId)
+                ->where('ulb_id', $ulbId);
+
+            $lastpayment = $transcationQuery
+                ->select('total_payable_amt')
+                ->where('paid_status', '1')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $paidStatus = ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd') ? 2 : 1;
+
+            if ($totalPayableAmt <= 0) {
+                throw new \Exception("Invalid payment amount");
+            }
+
+            // 🔹 Start DB transaction
+            DB::beginTransaction();
+
+            try {
+                // Insert transaction
+                $trans = $this->Transaction;
+                $trans->transaction_date     = $transcationDate;
+                $trans->total_demand_amt     = $totalDemandAmt;
+                $trans->total_payable_amt    = $totalPayableAmt;
+                $trans->total_remaining_amt  = $remainingAmt;
+                $trans->payment_mode         = $request->paymentMode;
+                $trans->paid_status          = $paidStatus;
+                $trans->consumer_id          = $consumerId;
+                $trans->user_id              = $userId;
+                $trans->ip_address           = $request->ip();
+                $trans->stampdate            = $date_time;
+                $trans->ulb_id               = $ulbId;
+                $trans->save();
+
+                // Generate transaction number
+                $trans->transaction_no = date("dmY") . $trans->id;
+                $trans->save();
+
+                // Insert Cheque/DD details if applicable
+                if ($paidStatus === 2) {
+                    $transdtls = $this->TransactionDetails;
+                    $transdtls->transaction_id = $trans->id;
+                    $transdtls->bank_name      = $request->bankName;
+                    $transdtls->branch_name    = $request->branchName;
+                    $transdtls->cheque_dd_no   = $request->chequeNo;
+                    $transdtls->cheque_dd_date = date('Y-m-d', strtotime($request->chequeDate));
+                    $transdtls->save();
+                }
+
+                // Insert into swm_collections
+                $sql = "INSERT INTO swm_collections (consumer_id, demand_id, transaction_id, total_tax, payment_from, payment_to, user_id, stampdate, ulb_id)
+                    SELECT consumer_id, id, '" . $trans->id . "', total_tax, payment_from, payment_to, '" . $userId . "', '" . $date_time . "', " . $ulbId . " 
+                    FROM swm_demands 
+                    WHERE consumer_id='$consumerId' AND payment_to <='$paidUpto' AND paid_status='0' AND ulb_id=" . $ulbId;
+
+                DB::connection($this->dbConn)->select($sql);
+
+                // Mark demands as paid
+                $this->Demand
+                    ->where('consumer_id', $consumerId)
+                    ->where('payment_to', '<=', $paidUpto)
+                    ->where('ulb_id', $ulbId)
+                    ->update(['paid_status' => 1]);
+
+                // Commit transaction
+                DB::commit();
+
+                // Prepare response
+                $response = [
+                    'consumerName'         => $consumer->name,
+                    'consumerCategory'     => $consumer->category ?: 'RESIDENTIAL',
+                    'consumerType'         => $consumer->consumer_type,
+                    'consumerNo'           => $consumer->consumer_no,
+                    'apartmentName'        => $consumer->apt_name,
+                    'apartmentCode'        => $consumer->apt_code,
+                    'address'              => $consumer->apt_address ?: $consumer->address,
+                    'transactionId'        => $trans->id,
+                    'transactionDate'      => $transcationDate,
+                    'transactionTime'      => date("h:i A"),
+                    'transactionNo'        => date("dmY") . $trans->id,
+                    'holdingNo'            => $consumer->holding_no,
+                    'mobileNo'             => $consumer->mobile_no,
+                    'monthlyRate'          => $consumer->rate,
+                    'demandAmount'         => $totalDemandAmt,
+                    'receivedAmount'       => $totalPayableAmt,
+                    'remainingAmount'      => $remainingAmt,
+                    'paidUpto'             => $request->paidUpto,
+                    'previousPaidAmount'   => $lastpayment->total_payable_amt ?? "0.00"
+                ];
+
+                return response()->json(['status' => true, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
     }
 }
