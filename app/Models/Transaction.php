@@ -18,4 +18,11 @@ class Transaction extends Model
         //$this->connection = Session::get('ulb');
         $this->connection = $data;
     }
+
+    public function getTransByCitizenId($citizenId)
+    {
+        return Transaction::where('citizen_id', $citizenId)
+            // ->where('status', 1)
+            ->orderByDesc('id');
+    }
 }

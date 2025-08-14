@@ -148,15 +148,17 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/caretaker-otp', 'swmCaretakerOtp');
         Route::post('swm/caretaker-consumer-tagging', 'caretakerConsumerTag');
 
-        Route::post('swm/caretaken-connections', 'viewCaretakenConnection');                       // Citiizen
+        Route::post('swm/caretaken-connections', 'viewCaretakenConnection');                           // Citiizen
 
-        Route::post('swm/caretaken-connections-demand', 'viewCaretakenConnectionWithDemand');                       // Citiizen
+        Route::post('swm/caretaken-connections-demand', 'viewCaretakenConnectionWithDemand');          // Citiizen
 
         Route::post('swm/initiate-online-payment', 'initiateOnlineDemandPayment');                       // Citiizen
 
         Route::post('swm/payment-success-or-failure', 'paymentSuccessOrFailure');                       // Citiizen
 
-        Route::post('swm/calculate-demand-month', 'callDemandByMonth');                       // Citiizen
+        Route::post('swm/calculate-demand-month', 'callDemandByMonth');                                  // Citiizen
+
+        Route::post('swm/citizen/payment-history', 'paymentHistory');                                       // Citizen  
     });
 
     Route::controller(MasterController::class)->group(function () {

@@ -28,5 +28,10 @@ return [
         "5" => "Online"
     ],
     "PAYMENT_FOR" => 'Demand Collections',
-    "MODULE_ID" => '4'
+    "MODULE_ID" => '4',
+    "USER_TYPE" => [
+        'Tax_Collector' => 'TC',
+        'Jsk'           => 'JSK',
+        'Citizen'       => 'Citizen'
+    ],
 ];

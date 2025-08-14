@@ -5053,6 +5053,7 @@ class ConsumerRepository implements iConsumerRepository
                 $trans->paid_status          = $paidStatus;
                 $trans->consumer_id          = $consumerId;
                 $trans->user_id              = $userId;
+                $trans->citizen_id           = $userId;
                 $trans->ip_address           = $request->ip();
                 $trans->stampdate            = $date_time;
                 $trans->ulb_id               = $ulbId;
@@ -5074,8 +5075,8 @@ class ConsumerRepository implements iConsumerRepository
                 }
 
                 // Insert into swm_collections
-                $sql = "INSERT INTO swm_collections (consumer_id, demand_id, transaction_id, total_tax, payment_from, payment_to, user_id, stampdate, ulb_id)
-                    SELECT consumer_id, id, '" . $trans->id . "', total_tax, payment_from, payment_to, '" . $userId . "', '" . $date_time . "', " . $ulbId . " 
+                $sql = "INSERT INTO swm_collections (consumer_id, demand_id, transaction_id, total_tax, payment_from, payment_to, user_id, stampdate, ulb_id , citizen_id)
+                    SELECT consumer_id, id, '" . $trans->id . "', total_tax, payment_from, payment_to, '" . $userId . "', '" . $date_time . "', " . $ulbId . " ,'" . $userId . "'
                     FROM swm_demands 
                     WHERE consumer_id='$consumerId' AND payment_to <='$paidUpto' AND paid_status='0' AND ulb_id=" . $ulbId;
 
@@ -5206,6 +5207,41 @@ class ConsumerRepository implements iConsumerRepository
             return response()->json(['status' => True, 'data' => $response, 'msg' => ''], 200);
         } catch (Exception $e) {
             return response()->json(['status' => False, 'data' => '', 'msg' => $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * | Get citizen payment history to show 
+     * | Using user Id for displaying data
+        | Selail No : 12
+        | Use 
+        | Show the payment from jsk also
+     */
+    public function paymentHistory(Request $request)
+    {
+        $validated = Validator::make(
+            $request->all(),
+            [
+                'pages' => 'required|int'
+            ]
+        );
+        if ($validated->fails())
+            return validationError($validated);
+
+        try {
+            $citizen        = Auth()->user();
+            $citizenId      = $citizen->id;
+            $mSwmTran     = new Transaction();
+            $refUserType    = Config::get("constants.USER_TYPE");
+
+            if ($citizen->user_type != $refUserType["Citizen"]) {
+                throw new Exception("You're user type is not citizen!");
+            }
+            $transactionDetails = $mSwmTran->getTransByCitizenId($citizenId)
+                ->paginate($request->pages);
+            return responseMsgs(true, "List of transactions", remove_null($transactionDetails), "", "01", ".ms", "POST", $request->deviceId);
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), [], "", "01", ".ms", "POST", $request->deviceId);
         }
     }
 }

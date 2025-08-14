@@ -757,4 +757,9 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->GetReprintDatav3($req);
     }
+
+    public function paymentHistory(Request $req)
+    {
+        return $this->ConResp->paymentHistory($req);
+    }
 }
