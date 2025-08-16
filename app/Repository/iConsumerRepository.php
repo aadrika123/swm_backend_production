@@ -143,4 +143,6 @@ interface iConsumerRepository
     public function GetReprintDatav3(Request $request);
 
     public function paymentHistory(Request $request);
+
+    public function checkParamOnlineDemandPayment(Request $request);
 }

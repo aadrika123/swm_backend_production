@@ -5007,7 +5007,7 @@ class ConsumerRepository implements iConsumerRepository
                 ->join('swm_consumer_types as ct', 'swm_consumers.consumer_type_id', '=', 'ct.id')
                 ->leftjoin('swm_apartments as a', 'swm_consumers.apartment_id', '=', 'a.id')
                 ->where('swm_consumers.id', $consumerId)
-                ->where('swm_consumers.ulb_id', $ulbId)
+                // ->where('swm_consumers.ulb_id', $ulbId)
                 ->first();
 
             if (!$consumer) {
@@ -5242,6 +5242,62 @@ class ConsumerRepository implements iConsumerRepository
             return responseMsgs(true, "List of transactions", remove_null($transactionDetails), "", "01", ".ms", "POST", $request->deviceId);
         } catch (Exception $e) {
             return responseMsgs(false, $e->getMessage(), [], "", "01", ".ms", "POST", $request->deviceId);
+        }
+    }
+    /**
+     * | Check the params for online payment
+     * | Selail No : 13
+     * | for global online payment
+     * | Use RazorpayReq model for saving the request data
+     */
+
+    public function checkParamOnlineDemandPayment(Request $request)
+    {
+        try {
+            $refUser        = Auth()->user();
+            $SwmModuleId  = Config::get('constants.MODULE_ID');
+            $paymentFor     = Config::get('constants.PAYMENT_FOR');
+            $startingDate   = Carbon::createFromFormat('Y-m-d',  $request->demandFrom)->startOfMonth();
+            $endDate        = Carbon::createFromFormat('Y-m-d',  $request->demandUpto)->endOfMonth();
+            $startingDate   = $startingDate->toDateString();
+            $endDate        = $endDate->toDateString();
+            // $url            = Config::get('razorpay.PAYMENT_GATEWAY_URL');
+            // $endPoint       = Config::get('razorpay.PAYMENT_GATEWAY_END_POINT');
+
+            # Demand Collection 
+            DB::beginTransaction();
+            $refDetails = $this->preOfflinePaymentParams($request, $startingDate, $endDate);
+            $myRequest = new Request([
+                'amount'        => $request->amount,
+                'workflowId'    => 0,                                                                   // Static
+                'id'            => $request->consumerId,
+                'departmentId'  => $SwmModuleId,
+                'ulbId'         => $refDetails['consumer']['ulb_id'],
+                // 'auth'          => $refUser
+            ]);
+            $data = $request->data;
+            $mRazorPayRequest = new RazorpayReq();
+            $mRazorPayRequest->saveRequestData($request, $paymentFor, $data, $refDetails);
+            DB::commit();
+
+            $temp['name']   = $refUser->user_name;
+            $temp['mobile'] = $refUser->mobile;
+            $temp['email']  = $refUser->email;
+            $temp['userId'] = $refUser->id;
+            $temp['ulbId']  = $refUser->ulb_id ?? $myRequest->ulbId;
+            $temp['ulbId']  = $refDetails['consumer']['ulb_id'] ?? $myRequest->ulbId;
+            $temp['orderId']  = $request->orderId ?? $data->data->orderId;;
+            $temp['departmentId']  = 17;
+            $temp['amount']  = $request->amount;
+            $temp['demandFrom']  = $request->demandFrom;
+            $temp['demandUpto']  = $request->demandUpto;
+            $temp['applicationId']  = $request->consumerId;
+            $temp['payment_method']  = "ONLINE";
+            $temp['workflow_id']  = 0; // Static
+            return responseMsgs(true, "Payment OrderId Generated Successfully !!!", $temp, "", "01", ".ms", "POST", $request->deviceId);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return responseMsgs(false, $e->getMessage(), [], "", "03", ".ms", "POST", $request->deviceId);
         }
     }
 }

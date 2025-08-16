@@ -762,4 +762,9 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->paymentHistory($req);
     }
+
+    public function checkParamOnlineDemandPayment(Request $req)
+    {
+        return $this->ConResp->checkParamOnlineDemandPayment($req);
+    }
 }

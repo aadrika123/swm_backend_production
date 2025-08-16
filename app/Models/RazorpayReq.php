@@ -27,17 +27,13 @@ class RazorpayReq extends Model
         // Extract only "data" from the full API response
         $paymentData = $temp->data ?? null;
 
-        if (!$paymentData) {
-            throw new \Exception("Payment data section missing in response");
-        }
-
         $RazorPayRequest = new RazorpayReq;
         $RazorPayRequest->consumer_id         = $request->consumerId ?? $request->applicationId;
-        $RazorPayRequest->user_id             = Auth()->user()->id;
+        $RazorPayRequest->user_id             = Auth()->user()->id ?? 36;
         $RazorPayRequest->amount              = $request->amount ?? $refDetails['totalAmount'];
         $RazorPayRequest->demand_from_upto    = $request->demandFrom ? ($request->demandFrom . "--" . $request->demandUpto) : null;
         $RazorPayRequest->ip_address          = $request->ip();
-        $RazorPayRequest->order_id            = $paymentData->orderId;
+        $RazorPayRequest->order_id            = $request->orderId ?? $paymentData->orderId;
         $RazorPayRequest->payment_type        = $paymentType ?? 'Online';
         $RazorPayRequest->currency            = $currency ?? 'INR';
         $RazorPayRequest->payment_status      = $paymentStatus ?? 0;

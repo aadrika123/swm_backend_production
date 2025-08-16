@@ -159,6 +159,8 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/calculate-demand-month', 'callDemandByMonth');                                  // Citiizen
 
         Route::post('swm/citizen/payment-history', 'paymentHistory');                                       // Citizen  
+
+        Route::post('swm/citizen/check-param-online-demand', 'checkParamOnlineDemandPayment');                                       // Citizen  
     });
 
     Route::controller(MasterController::class)->group(function () {
