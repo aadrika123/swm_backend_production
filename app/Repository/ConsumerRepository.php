@@ -4505,7 +4505,8 @@ class ConsumerRepository implements iConsumerRepository
             $consumerDetails = $mSwmConsumer->getConsumerByIdsv1($consumerIds)->get();
             $checkConsumer = collect($consumerDetails)->first();
             if (is_null($checkConsumer)) {
-                throw new Exception("Consuemr Details Not Found!");
+                // throw new Exception("Consuemr Details Not Found!");
+                return response()->json(["status" => true, "message" => "Consuemr Details Not Found!", "data" => $consumerDetails], 200);
             }
             return response()->json(["status" => true, "message" => "List of undertaken Swm connections!!", "data" => $consumerDetails], 200);
         } catch (Exception $e) {
