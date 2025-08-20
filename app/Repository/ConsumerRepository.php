@@ -31,6 +31,8 @@ use App\Models\DemandAdjustment;
 use App\Models\RazorpayResponse;
 use App\Models\TcComplaint;
 use App\Models\Routes;
+use App\Pipelines\SearchHoldingNo;
+use App\Pipelines\SearchByConsumer;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +47,7 @@ use Illuminate\Support\Facades\Config;
 use Razorpay\Api\Api;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Pipeline\Pipeline;
 
 /**
  * | Created On-08-09-2022 
@@ -254,7 +257,7 @@ class ConsumerRepository implements iConsumerRepository
                 $consumerList = $this->Consumer->join('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
                     ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
                     ->select(DB::raw('swm_consumers.*, swm_consumer_categories.name as category, swm_consumer_types.name as type'));
-                    // ->where('swm_consumers.ulb_id', $ulbId);
+                // ->where('swm_consumers.ulb_id', $ulbId);
                 if (isset($request->wardNo))
                     $consumerList = $consumerList->where('ward_no', $request->wardNo);
                 $consumerList = $consumerList->where($field, $operator, $value)
@@ -4403,116 +4406,212 @@ class ConsumerRepository implements iConsumerRepository
         }
     }
     /**
-     * | Send otp for caretaker property
+     * | Send OTP for caretaker property
+     * | Validates request, fetches consumer details, checks caretaker status,
+     * | and sends OTP to the consumer's registered mobile number.
      */
     public function swmCaretakerOtp(Request $req)
     {
+        // ✅ Step 1: Validate incoming request parameters
+        $validator = Validator::make($req->all(), [
+            'holdingNo'  => 'nullable|string|max:255',
+            'consumerNo' => 'nullable|string|max:255',
+            'mobileNo'   => 'nullable|string|max:10',
+        ]);
+
         try {
-            $user                       = Auth()->user();
-            $userId                     = $user->id;
-            $ThirdPartyController       = new ThirdPartyController();
-            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
-            $mSwmConsumer               = new Consumer();
+            // ✅ Step 2: Get logged-in user
+            $userId = auth()->id();
 
-            $swmDtl = $mSwmConsumer->getConsumerByNo($req->consumerNo);
-            if (!isset($swmDtl))
-                throw new Exception('swm Connection Not Found!');
+            // ✅ Step 3: Initialize required models and controllers
+            $thirdPartyController    = new ThirdPartyController();
+            $activeCitizenUndercare  = new ActiveCitizenUndercare();
 
-            $existingData = $mActiveCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
-            if (!is_null($existingData))
-                throw new Exception("Consumer No. caretaker already exist!");
+            // ✅ Step 4: Fetch consumer details using pipeline (search by consumer or holding no)
+            $swmDtl = app(Pipeline::class)
+                ->send(
+                    Consumer::query()->where('is_deactivate', 0)
+                )
+                ->through([
+                    SearchByConsumer::class,
+                    SearchHoldingNo::class,
+                ])
+                ->thenReturn()
+                ->first();
 
+            // Throw error if consumer is not found
+            if (!$swmDtl) {
+                throw new Exception('SWM Connection Not Found!');
+            }
+
+            // ✅ Step 5: Check if caretaker already exists for this consumer
+            $existingData = $activeCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
+            if ($existingData) {
+                throw new Exception("Consumer No. caretaker already exists!");
+            }
+
+            // ✅ Step 6: Prepare request to send OTP
             $applicantMobile = $swmDtl->mobile_no;
+
             $myRequest = new \Illuminate\Http\Request();
             $myRequest->setMethod('POST');
             $myRequest->request->add(['mobileNo' => $applicantMobile]);
-            $otpResponse = $ThirdPartyController->sendOtp($myRequest);
 
-            $response = collect($otpResponse)->toArray();
+            // ✅ Step 7: Send OTP via third-party controller
+            $otpResponse = $thirdPartyController->sendOtp($myRequest);
+
+            // ✅ Step 8: Format response
+            $responseData = collect($otpResponse)->toArray();
             $data = [
-                'otp' => $response['original']['data'],
+                'otp'      => $responseData['original']['data'] ?? null,
                 'mobileNo' => $applicantMobile
             ];
-            return response()->json(["status" => true, "message" => "OTP send successfully", "data" => $data], 200);
+
+            return response()->json([
+                "status"  => true,
+                "message" => "OTP sent successfully",
+                "data"    => $data
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+            // ✅ Handle errors gracefully
+            return response()->json([
+                'status' => false,
+                'msg'    => $e->getMessage()
+            ], 500);
         }
     }
 
+
     /**
-     * | Care taker property tag
+     * | Caretaker property tag
+     * | Validates OTP, verifies consumer, and links consumer to caretaker user.
      */
     public function caretakerConsumerTag(Request $req)
     {
-        $validated = Validator::make(
-            $req->all(),
-            [
-                'consumerNo' => 'required|max:255',
-                'otp' => 'required|digits:6'
-            ]
-        );
+        // ✅ Step 1: Validate request data
+        $validated = Validator::make($req->all(), [
+            'otp'       => 'required|digits:6',
+            'challanNo' => 'nullable|string|max:255',
+            'holdingNo' => 'nullable|string|max:255',
+        ]);
 
         try {
-            $users                      = Auth()->user();
-            $userId                     = $users->id;
-            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
-            $mSwmConsumer               = new Consumer();
-            $ThirdPartyController       = new ThirdPartyController();
+            // ✅ Step 2: Get logged-in user
+            $userId = auth()->id();
+
+            // ✅ Step 3: Initialize required models/controllers
+            $activeCitizenUndercare  = new ActiveCitizenUndercare();
+            $thirdPartyController    = new ThirdPartyController();
+
+            // ✅ Step 4: Fetch consumer details (search by challan/holding no)
+            $swmDtl = app(Pipeline::class)
+                ->send(
+                    Consumer::query()->where('is_deactivate', 0)
+                )
+                ->through([
+                    SearchByConsumer::class,
+                    SearchHoldingNo::class,
+                ])
+                ->thenReturn()
+                ->first();
+
+            if (!$swmDtl) {
+                throw new Exception('SWM Connection Not Found!');
+            }
 
             DB::beginTransaction();
-            $swmDtl = $mSwmConsumer->getConsumerByNo($req->consumerNo);
-            if (!isset($swmDtl))
-                throw new Exception('swm Connection Not Found!');
-            $myRequest = new \Illuminate\Http\Request();
-            $myRequest->setMethod('POST');
-            $myRequest->request->add(['mobileNo' => $swmDtl->mobile_no]);
-            $myRequest->request->add(['otp' => $req->otp]);
-            $otpReturnData = $ThirdPartyController->verifyOtp($myRequest);
-            $verificationStatus = collect($otpReturnData)['original']['status'];
-            if ($verificationStatus == false)
-                throw new Exception("otp Not Validated!");
 
-            $existingData = $mActiveCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
-            if (!is_null($existingData))
-                throw new Exception("ConsumerNo caretaker already exist!");
+            // ✅ Step 5: Verify OTP via third-party controller
+            $otpRequest = new \Illuminate\Http\Request();
+            $otpRequest->setMethod('POST');
+            $otpRequest->request->add([
+                'mobileNo' => $swmDtl->mobile_no,
+                'otp'      => $req->otp
+            ]);
 
-            $mActiveCitizenUndercare->saveCaretakeDetails($swmDtl->id, $swmDtl->mobile_no, $userId);
+            $otpResponse = $thirdPartyController->verifyOtp($otpRequest);
+            $verificationStatus = collect($otpResponse)['original']['status'] ?? false;
+
+            if (!$verificationStatus) {
+                throw new Exception("OTP validation failed!");
+            }
+
+            // ✅ Step 6: Ensure caretaker record does not already exist
+            $existingData = $activeCitizenUndercare->getDetailsForUnderCare($userId, $swmDtl->id);
+            if ($existingData) {
+                throw new Exception("Consumer already assigned to caretaker!");
+            }
+
+            // ✅ Step 7: Save caretaker details
+            $activeCitizenUndercare->saveCaretakeDetails($swmDtl->id, $swmDtl->mobile_no, $userId);
+
             DB::commit();
-            return response()->json(["status" => true, "message" => "Consumer Succesfully Attached!"], 200);
+
+            // ✅ Step 8: Return success response
+            return response()->json([
+                "status"  => true,
+                "message" => "Consumer successfully attached!"
+            ], 200);
         } catch (Exception $e) {
+            // ✅ Rollback on failure
             DB::rollBack();
-            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => false,
+                'msg'    => $e->getMessage()
+            ], 500);
         }
     }
+
     /**
-     * | View details of the caretaken swm connection
-     * | using user id
-        | Working
-        | Serial No : 07
+     * | View details of the caretaker SWM connections
+     * | Retrieves all SWM connections assigned under caretaker (by logged-in user)
+     * | Serial No : 07
      */
     public function viewCaretakenConnection(Request $request)
     {
         try {
-            $mSwmConsumer               = new Consumer();
-            $mActiveCitizenUndercare    = new ActiveCitizenUndercare();
+            // ✅ Step 1: Initialize required models
+            $consumerModel      = new Consumer();
+            $caretakerModel     = new ActiveCitizenUndercare();
 
-            $connectionDetails = $mActiveCitizenUndercare->getDetailsByCitizenId();
-            $checkDemand = collect($connectionDetails)->first();
-            if (is_null($checkDemand))
-                throw new Exception("Under taken data not found!");
+            // ✅ Step 2: Fetch caretaker-connection mapping for logged-in user
+            $connectionDetails = $caretakerModel->getDetailsByCitizenId();
 
-            $consumerIds = collect($connectionDetails)->pluck('swm_id');
-            $consumerDetails = $mSwmConsumer->getConsumerByIdsv1($consumerIds)->get();
-            $checkConsumer = collect($consumerDetails)->first();
-            if (is_null($checkConsumer)) {
-                // throw new Exception("Consuemr Details Not Found!");
-                return response()->json(["status" => true, "message" => "Consuemr Details Not Found!", "data" => $consumerDetails], 200);
+            // If caretaker has no linked connections
+            if (collect($connectionDetails)->isEmpty()) {
+                throw new Exception("Undertaken data not found!");
             }
-            return response()->json(["status" => true, "message" => "List of undertaken Swm connections!!", "data" => $consumerDetails], 200);
+
+            // ✅ Step 3: Extract consumer IDs from caretaker connections
+            $consumerIds = collect($connectionDetails)->pluck('swm_id');
+
+            // ✅ Step 4: Fetch consumer details based on those IDs
+            $consumerDetails = $consumerModel->getConsumerByIdsv1($consumerIds)->get();
+
+            // If consumers not found, return a graceful response
+            if ($consumerDetails->isEmpty()) {
+                return response()->json([
+                    "status"  => true,
+                    "message" => "Consumer details not found!",
+                    "data"    => []
+                ], 200);
+            }
+
+            // ✅ Step 5: Return success response with data
+            return response()->json([
+                "status"  => true,
+                "message" => "List of undertaken SWM connections!",
+                "data"    => $consumerDetails
+            ], 200);
         } catch (Exception $e) {
-            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+            // ✅ Error handling
+            return response()->json([
+                'status' => false,
+                'msg'    => $e->getMessage()
+            ], 500);
         }
     }
+
     /**
      * | View details of the caretaken swm connection
      * | using user id
