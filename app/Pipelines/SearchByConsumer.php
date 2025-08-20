@@ -13,6 +13,6 @@ class SearchByConsumer
             return $next($request);
         }
         return $next($request)
-            ->where('consumer_no', 'ilike', '%' . request()->input('challanNo') . '%');
+            ->where('consumer_no', 'ilike', '%' . request()->input('consumerNo') . '%');
     }
 }

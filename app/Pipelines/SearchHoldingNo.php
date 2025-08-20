@@ -6,11 +6,12 @@ use Closure;
 
 class SearchHoldingNo
 {
-    public function handle($query, Closure $next)
+    public function handle($request, Closure $next)
     {
-        if (request()->filled('holdingNo')) {
-            $query->where('holding_no', request()->holdingNo);
+        if (!request()->has('holdingNo')) {
+            return $next($request);
         }
-        return $next($query);
+        return $next($request)
+            ->where('holding_no', 'ilike', '%' . request()->input('holdingNo') . '%');
     }
 }
