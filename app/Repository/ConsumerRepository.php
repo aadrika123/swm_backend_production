@@ -223,7 +223,7 @@ class ConsumerRepository implements iConsumerRepository
     {
 
         // $user = Auth()->user();
-        $ulbId = $request->ulbId ?? 2;
+        $ulbId = $request->ulbId;
         try {
             $conArr = array();
             if (isset($request->id) || isset($request->consumerNo) || isset($request->consumerName) || isset($request->mobileNo)) {
@@ -253,8 +253,8 @@ class ConsumerRepository implements iConsumerRepository
 
                 $consumerList = $this->Consumer->join('swm_consumer_categories', 'swm_consumers.consumer_category_id', '=', 'swm_consumer_categories.id')
                     ->join('swm_consumer_types', 'swm_consumers.consumer_type_id', '=', 'swm_consumer_types.id')
-                    ->select(DB::raw('swm_consumers.*, swm_consumer_categories.name as category, swm_consumer_types.name as type'))
-                    ->where('swm_consumers.ulb_id', $ulbId);
+                    ->select(DB::raw('swm_consumers.*, swm_consumer_categories.name as category, swm_consumer_types.name as type'));
+                    // ->where('swm_consumers.ulb_id', $ulbId);
                 if (isset($request->wardNo))
                     $consumerList = $consumerList->where('ward_no', $request->wardNo);
                 $consumerList = $consumerList->where($field, $operator, $value)
@@ -270,7 +270,7 @@ class ConsumerRepository implements iConsumerRepository
                     $demand = $this->Demand->where('consumer_id', $consumer->id)
                         ->where('paid_status', 0)
                         ->where('is_deactivate', 0)
-                        ->where('ulb_id', $ulbId)
+                        // ->where('ulb_id', $ulbId)
                         ->orderBy('payment_from', 'asc')
                         ->get();
                     $total_tax = 0.00;
@@ -5144,7 +5144,7 @@ class ConsumerRepository implements iConsumerRepository
                 LEFT JOIN swm_consumer_types ct on c.consumer_type_id=ct.id
                 LEFT JOIN swm_consumer_categories cc on c.consumer_category_id=cc.id
                 LEFT JOIN swm_apartments a on t.apartment_id=a.id
-                JOIN (
+                 JOIN (
                     SELECT min(payment_from) as payment_from, max(payment_to) as payment_to,
                     transaction_id 
                     FROM swm_collections 
@@ -5152,7 +5152,7 @@ class ConsumerRepository implements iConsumerRepository
                 ) cl on cl.transaction_id=t.id 
                 LEFT JOIN swm_transaction_details td on td.transaction_id=t.id
                 WHERE t.transaction_no = $transactionNo ";
-                // WHERE t.transaction_no='" . $transactionNo . "'";
+                // -- // WHERE t.transaction_no='" . $transactionNo . "'";
                 DB::connection($this->dbConn)->enableQueryLog();
                 $transaction = DB::connection($this->dbConn)->select($sql);
                 $ulbId = $transaction[0]->ulb_id ?? 0;
