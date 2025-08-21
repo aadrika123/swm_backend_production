@@ -767,4 +767,8 @@ class ConsumerController extends Controller
     {
         return $this->ConResp->checkParamOnlineDemandPayment($req);
     }
+    public function swmListByKey(Request $req)
+    {
+        return $this->ConResp->swmListByKey($req);
+    }
 }

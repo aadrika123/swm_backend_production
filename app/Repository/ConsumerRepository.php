@@ -4754,73 +4754,6 @@ class ConsumerRepository implements iConsumerRepository
         ];
     }
 
-    // /**
-    //  * | Payment Success or Failure of SWM
-    //  * | Function - 68
-    //  * | API - 68
-    //  */
-    // public function paymentSuccessOrFailure(Request $req)
-    // {
-    //     try {
-    //         // $refUser = auth()->user();
-    //         $refUserId = $req->citizenId;
-
-    //         if (!empty($req->orderId)) {
-
-    //             $msg = 'Payment processed successfully';
-    //             $mRazorpayResponse = new RazorpayResponse();
-
-    //             DB::beginTransaction();
-
-    //             // Check if the record exists
-    //             $RazorPayRequest = DB::table('razorpay_reqs')
-    //                 // ->where('id', $req->id)
-    //                 ->where('order_id', $req->orderId)
-    //                 ->first();
-
-    //             if (!$RazorPayRequest) {
-    //                 throw new \Exception('Invalid payment request.');
-    //             }
-    //             $refDate = explode("--", $RazorPayRequest->demand_from_upto);
-    //             $startingYear = $refDate[0];
-    //             $paymentUpto = $refDate[1];
-
-    //             // Call makePayment
-    //             $req->merge([
-    //                 "isNotWebHook" => true,
-    //                 "paymentModes" => $req->paymentMode,
-    //                 "paymentMode"  => "ONLINE",
-    //                 "paidUpto"     => $paymentUpto,
-    //                 "paidAmount"   => $req->amount,
-    //                 "request_id"   => $RazorPayRequest->id,
-    //                 "consumerId"   => $RazorPayRequest->consumer_id,
-    //                 "ulb_id"       => $req->ulb_id,
-    //                 "user_id"      => $req->user_id ,
-
-    //             ]);
-
-    //             $paymentResponse = $this->makePaymentv1($req);
-    //             $data = $paymentResponse->original["data"];
-
-    //             // Save payment response
-    //             $mRazorpayResponse->saveResponseData($req, $data);
-
-    //             // Update payment status
-    //             DB::table('razorpay_reqs')
-    //                 ->where('id', $req->id)
-    //                 ->update(['payment_status' => 1]);
-
-    //             DB::commit();
-
-    //             return responseMsgs(true, $msg, $data, '110168', 01, responseTime(), 'POST', $req->deviceId);
-    //         }
-
-    //         throw new \Exception('Missing orderId or paymentId');
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return responseMsgs(false, $e->getMessage(), "", '110168', 01, "", 'POST', $req->deviceId);
-    //     }
-    // }
 
     public function paymentSuccessOrFailure(Request $req)
     {
@@ -4962,128 +4895,6 @@ class ConsumerRepository implements iConsumerRepository
         }
         return $allCharges;
     }
-
-    // public function makePaymentv1(Request $request)
-    // {
-
-    //     try {
-    //         if (isset($request->consumerId)) {
-
-    //             $ulbId = $request->ulb_id;
-    //             $userId = $request->user_id;
-    //             $consumerId = $request->consumerId;
-    //             $totalPayableAmt = $request->paidAmount;
-    //             $transcationDate = date('Y-m-d');
-    //             $date_time = date("Y-m-d H:i:s");
-    //             $paidUpto = date('Y-m-d', strtotime($request->paidUpto));
-    //             // if ($user->user_type != 'Citizen') {
-    //             //     $getTc = $this->GetUserDetails($userId, $this->masterConnection);
-    //             // }
-
-
-    //             $consumer = $this->Consumer->select('swm_consumers.*', 'a.apt_name', 'a.apt_code', 'cc.name as category', 'ct.rate', 'apt_address', 'ct.name as consumer_type')
-    //                 ->join('swm_consumer_categories as cc', 'swm_consumers.consumer_category_id', '=', 'cc.id')
-    //                 ->join('swm_consumer_types as ct', 'swm_consumers.consumer_type_id', '=', 'ct.id')
-    //                 ->leftjoin('swm_apartments as a', 'swm_consumers.apartment_id', '=', 'a.id')
-    //                 ->where('swm_consumers.id', $consumerId)
-    //                 ->where('swm_consumers.ulb_id', $ulbId)
-    //                 ->first();
-
-    //             $totalDemandAmt = $this->Demand->where('consumer_id', $consumerId)
-    //                 ->where('paid_status', 0)
-    //                 ->where('is_deactivate', 0)
-    //                 ->where('ulb_id', $ulbId)
-    //                 ->sum('total_tax');
-
-    //             $remainingAmt = $totalDemandAmt - $totalPayableAmt;
-
-
-    //             $transcation = $this->Transaction->where('consumer_id', $consumerId)->where('ulb_id', $ulbId);
-
-    //             $lastpayment = $transcation->select('total_payable_amt')->where('paid_status', '1')->orderBy('id', 'desc')->first();
-
-    //             $transcation = $transcation->whereDate('transaction_date', '=', $transcationDate)
-    //                 ->where('total_payable_amt', $totalPayableAmt)
-    //                 ->get();
-    //             $paidStatus = 1;
-
-    //             if ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd')
-    //                 $paidStatus = 2;
-
-    //             //if($transcation->count() == 0 && $totalPayableAmt > 0 )    
-    //             if ($totalPayableAmt > 0) {
-    //                 $trans = $this->Transaction;
-    //                 $trans->transaction_date = $transcationDate;
-    //                 $trans->total_demand_amt = $totalDemandAmt;
-    //                 $trans->total_payable_amt = $totalPayableAmt;
-    //                 $trans->total_remaining_amt = $remainingAmt;
-    //                 $trans->payment_mode = $request->paymentMode;
-    //                 $trans->paid_status = $paidStatus;
-    //                 $trans->consumer_id = $consumerId;
-    //                 $trans->user_id = $userId;
-    //                 $trans->ip_address = $request->ip();
-    //                 $trans->stampdate = $date_time;
-    //                 $trans->ulb_id = $ulbId;
-    //                 $trans->save();
-
-    //                 if ($trans->id > 0) {
-    //                     $trans->transaction_no = date("dmY") . $trans->id;
-    //                     $trans->save();
-
-    //                     if ($request->paymentMode == 'Cheque' || $request->paymentMode == 'Dd') {
-    //                         $transdtls = $this->TransactionDetails;
-    //                         $transdtls->transaction_id = $trans->id;
-    //                         $transdtls->bank_name = $request->bankName;
-    //                         $transdtls->branch_name = $request->branchName;
-    //                         $transdtls->cheque_dd_no = $request->chequeNo;
-    //                         $transdtls->cheque_dd_date = date('Y-m-d', strtotime($request->chequeDate));
-    //                         $transdtls->save();
-    //                     }
-
-    //                     $sql = "INSERT INTO swm_collections (consumer_id, demand_id, transaction_id, total_tax, payment_from, payment_to, user_id, stampdate, ulb_id)
-    //                     SELECT consumer_id, id, '" . $trans->id . "', total_tax, payment_from, payment_to, '" . $userId . "', '" . $date_time . "', " . $ulbId . " FROM swm_demands 
-    //                     WHERE consumer_id='$consumerId' and (payment_to <='" . $paidUpto . "') and paid_status='0' and ulb_id=" . $ulbId;
-
-    //                     DB::connection($this->dbConn)->select($sql);
-
-    //                     $this->Demand->where('consumer_id', $consumerId)
-    //                         ->where('payment_to', '<=', $paidUpto)
-    //                         ->where('ulb_id', $ulbId)
-    //                         ->update(['paid_status' => 1]);
-
-    //                     $response['consumerName'] = $consumer->name;
-    //                     $response['consumerCategory'] = ($consumer->category) ? $consumer->category : 'RESIDENTIAL';
-    //                     $response['consumerType'] = $consumer->consumer_type;
-    //                     $response['consumerNo'] = $consumer->consumer_no;
-    //                     $response['apartmentName'] = $consumer->apt_name;
-    //                     $response['apartmentCode'] = $consumer->apt_code;
-    //                     $response['address'] = ($consumer->apt_address) ? $consumer->apt_address : $consumer->address;
-    //                     $response['transactionId'] = $trans->id;
-    //                     $response['transactionDate'] = $transcationDate;
-    //                     $response['transactionTime'] =  date("h:i A");
-    //                     $response['transactionNo'] = date("dmY") . $trans->id;
-    //                     $response['holdingNo'] = $consumer->holding_no;
-    //                     $response['mobileNo'] = $consumer->mobile_no;
-    //                     $response['monthlyRate'] = $consumer->rate;
-    //                     $response['demandAmount'] = $totalDemandAmt;
-    //                     $response['receivedAmount'] = $totalPayableAmt;
-    //                     $response['remainingAmount'] = $remainingAmt;
-    //                     $response['paidUpto'] = $request->paidUpto;
-    //                     $response['previousPaidAmount'] = ($lastpayment) ? $lastpayment->total_payable_amt : "0.00";
-    //                     // $response['tcName'] = $getTc->name ?? $user->name;
-    //                     // $response['tcMobile'] = $getTc->contactno ?? $user->mobile;
-    //                     // $response = array_merge($response, $this->GetUlbData($ulbId));
-    //                     return response()->json(['status' => True, 'data' => $response, 'msg' => 'Payment Done Successfully'], 200);
-    //                 }
-    //             }
-    //             // else{
-    //             //     return response()->json(['status'=> True, 'data'=>'', 'msg'=> 'This user payment today not updated..'], 200);
-    //             // }
-    //         }
-    //     } catch (Exception $e) {
-    //         return response()->json(['status' => False, 'data' => '', 'msg' => $e], 400);
-    //     }
-    // }
 
     public function makePaymentv1(Request $request)
     {
@@ -5398,6 +5209,72 @@ class ConsumerRepository implements iConsumerRepository
         } catch (Exception $e) {
             DB::rollBack();
             return responseMsgs(false, $e->getMessage(), [], "", "03", ".ms", "POST", $request->deviceId);
+        }
+    }
+
+    /**
+     * | Get Property GB List by Filter Key
+     * | Filtered by: holdingNo / zoneId / wardId 
+     */
+    public function swmListByKey(Request $request)
+    {
+        // ✅ Step 1: Validate request inputs
+        $request->validate([
+            'filteredBy' => "required|string",
+            'parameter'  => "nullable|string",
+            'zoneId'     => "nullable|digits_between:1,9223372036854775807",
+            'wardId'     => "nullable|digits_between:1,9223372036854775807",
+            'isLegacy'   => "nullable|boolean",
+            'perPage'    => "nullable|integer|min:1",
+        ]);
+
+        try {
+            // ✅ Step 2: Initialize
+            $mSwmConsumer = new Consumer();
+            $user     = Auth()->user();
+            $userId   = $user->id;
+            $userType = $user->user_type;
+            $ulbId    = $user->ulb_id ?? $request->ulbId;
+
+            $key       = $request->filteredBy;
+            $parameter = $request->parameter;
+            $isLegacy  = $request->isLegacy ?? false;
+            $perPage   = $request->perPage ?? 10;
+
+            // ✅ Step 3: Base query
+            $query = $mSwmConsumer->recordDetailv1();
+
+            // ✅ Step 4: Apply filters based on key
+            switch ($key) {
+                case "holdingNo":
+                    $query->where('swm_consumers.holding_no', $parameter);
+                    break;
+
+                case "zoneId":
+                    $query->where('swm_consumers.zone_id', $request->zoneId);
+                    break;
+
+                case "wardId":
+                    $query->where('swm_consumers.ward_id', $request->wardId);
+                    break;
+
+                default:
+                    throw new Exception("Invalid filter key provided!");
+            }
+
+            // ✅ Step 5: Paginate results
+            $paginator = $query->paginate($perPage);
+
+            $list = [
+                "current_page" => $paginator->currentPage(),
+                "last_page"    => $paginator->lastPage(),
+                "data"         => $paginator->items(),
+                "total"        => $paginator->total(),
+            ];
+
+            return responseMsgs(true, "Application Details", remove_null($list), "011302", "1.0", responseTime(), "POST", $request->deviceId ?? "");
+        } catch (Exception $e) {
+            return responseMsgs(false, $e->getMessage(), "", "011302", "1.0", "", "POST", $request->deviceId ?? "");
         }
     }
 }

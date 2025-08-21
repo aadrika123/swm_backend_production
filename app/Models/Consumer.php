@@ -278,4 +278,42 @@ class Consumer extends Model
         return Consumer::where('id', $consumerId)
             ->firstOrFail();
     }
+
+    /** 
+     * | Get consumer by consumer id for citizen under care water connections 
+     */
+    public function recordDetailv1()
+    {
+        return Consumer::select(
+            'swm_consumers.id',
+            'swm_consumers.consumer_no',
+            'swm_consumers.holding_no',
+            'swm_consumers.address',
+            'swm_consumers.ulb_id',
+            'swm_consumers.ward_no',
+            'swm_consumer_categories.name as category_name',
+            'swm_consumer_types.name as consumer_type_name',
+            DB::raw("string_agg(DISTINCT swm_consumers.name,',') as applicant_name"),
+            DB::raw("string_agg(DISTINCT swm_consumers.mobile_no::VARCHAR,',') as mobile_no"),
+            DB::raw("COALESCE(SUM(swm_demands.total_tax), 0) as total_demand_amount"),
+            DB::raw("min(swm_demands.payment_from) as demand_from"),
+            DB::raw("max(swm_demands.payment_to) as demand_upto")
+        )
+            ->leftjoin('ulb_masters', 'ulb_masters.id', '=', 'swm_consumers.ulb_id')
+            ->join('swm_consumer_categories', 'swm_consumer_categories.id', '=', 'swm_consumers.consumer_category_id')
+            ->join('swm_consumer_types', 'swm_consumer_types.id', '=', 'swm_consumers.consumer_type_id')
+            ->leftJoin('swm_demands', function ($join) {
+                $join->on('swm_demands.consumer_id', '=', 'swm_consumers.id');
+            })
+            ->groupBy(
+                'swm_consumers.id',
+                'swm_consumers.consumer_no',
+                'swm_consumers.address',
+                'swm_consumers.ulb_id',
+                'swm_consumers.ward_no',
+                'swm_consumer_categories.name',
+                'swm_consumer_types.name',
+                'swm_consumers.holding_no'
+            );
+    }
 }

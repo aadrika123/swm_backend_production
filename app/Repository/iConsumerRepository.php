@@ -145,4 +145,6 @@ interface iConsumerRepository
     public function paymentHistory(Request $request);
 
     public function checkParamOnlineDemandPayment(Request $request);
+    
+    public function swmListByKey(Request $request);
 }

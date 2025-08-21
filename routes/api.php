@@ -155,6 +155,7 @@ Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
         Route::post('swm/citizen/payment-history', 'paymentHistory');                                       // Citizen  
         Route::post('swm/citizen/check-param-online-demand', 'checkParamOnlineDemandPayment');             // Citizen
         Route::post('swm/citizen/payment-history', 'paymentHistory');                                       // Citizen
+        Route::post('swm/citizen/get-filter-swm-details', 'swmListByKey');                                       // Citizen
     });
 
     Route::controller(MasterController::class)->group(function () {
