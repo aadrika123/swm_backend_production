@@ -282,7 +282,7 @@ class Consumer extends Model
     /** 
      * | Get consumer by consumer id for citizen under care water connections 
      */
-    public function recordDetailv1()
+    public function recordDetailv1($ulbId)
     {
         return Consumer::select(
             'swm_consumers.id',
@@ -305,6 +305,7 @@ class Consumer extends Model
             ->leftJoin('swm_demands', function ($join) {
                 $join->on('swm_demands.consumer_id', '=', 'swm_consumers.id');
             })
+            ->where('swm_consumers.ulb_id', $ulbId)
             ->groupBy(
                 'swm_consumers.id',
                 'swm_consumers.consumer_no',

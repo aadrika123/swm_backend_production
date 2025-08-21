@@ -4415,9 +4415,13 @@ class ConsumerRepository implements iConsumerRepository
         // ✅ Step 1: Validate incoming request parameters
         $validator = Validator::make($req->all(), [
             'holdingNo'  => 'nullable|string|max:255',
-            'consumerNo' => 'nullable|string|max:255',
+            'consumerNo' => 'required|string|max:255',
             'mobileNo'   => 'nullable|string|max:10',
+            'ulbId'     => 'required|integer',
         ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'msg' => $validator->messages()->first()], 400);
+        }
 
         try {
             // ✅ Step 2: Get logged-in user
@@ -4431,6 +4435,10 @@ class ConsumerRepository implements iConsumerRepository
             $swmDtl = app(Pipeline::class)
                 ->send(
                     Consumer::query()->where('is_deactivate', 0)
+                        ->where(
+                            'ulb_id',
+                            $req->ulbId
+                        )
                 )
                 ->through([
                     SearchByConsumer::class,
@@ -5242,7 +5250,7 @@ class ConsumerRepository implements iConsumerRepository
             $perPage   = $request->perPage ?? 10;
 
             // ✅ Step 3: Base query
-            $query = $mSwmConsumer->recordDetailv1();
+            $query = $mSwmConsumer->recordDetailv1($ulbId);
 
             // ✅ Step 4: Apply filters based on key
             switch ($key) {
@@ -5264,6 +5272,11 @@ class ConsumerRepository implements iConsumerRepository
 
             // ✅ Step 5: Paginate results
             $paginator = $query->paginate($perPage);
+
+            // ✅ Step 6: Check if data exists
+            if ($paginator->total() === 0) {
+                return responseMsgs(false, "Consumer not found", [], "011302", "1.0", responseTime(), "POST", $request->deviceId ?? "");
+            }
 
             $list = [
                 "current_page" => $paginator->currentPage(),
