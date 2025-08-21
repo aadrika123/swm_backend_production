@@ -4415,7 +4415,7 @@ class ConsumerRepository implements iConsumerRepository
         // ✅ Step 1: Validate incoming request parameters
         $validator = Validator::make($req->all(), [
             'holdingNo'  => 'nullable|string|max:255',
-            'consumerNo' => 'required|string|max:255',
+            'consumerNo' => 'nullable|string|max:255',
             'mobileNo'   => 'nullable|string|max:10',
             'ulbId'     => 'required|integer',
         ]);
