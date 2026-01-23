@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-Route::get('/health-check', function () {
+Route::get('swm/health-check', function () {
     return response()->json(['status' => 'ok']);
 });
 
