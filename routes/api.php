@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 
+Route::get('/health-check', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 
 Route::group(['middleware' => ['json.response', 'auth_maker']], function () {
     // Your Protected Route is Here
