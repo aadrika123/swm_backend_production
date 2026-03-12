@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         APP_NAME        = 'swm-backend'
+        GITOPS_DIR      = 'swm-backend-production'
         HARBOR_REGISTRY = '172.18.1.51:30500'
         HARBOR_PROJECT  = 'aadrika'
         IMAGE           = "${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${APP_NAME}"
@@ -82,7 +83,7 @@ pipeline {
                     script {
                         def overlay = 'staging'
 
-                        dir("apps/${APP_NAME}/${overlay}") {
+                        dir("apps/${GITOPS_DIR}/${overlay}") {
                             sh "kustomize edit set image ${IMAGE}=${IMAGE}:${env.IMAGE_TAG}"
                         }
 
